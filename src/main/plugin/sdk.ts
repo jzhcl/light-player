@@ -1,9 +1,11 @@
 // 插件 SDK 工厂：为每个插件实例创建隔离的 lp 命名空间对象
 
 import type { BrowserWindow } from 'electron'
+import { shell } from 'electron'
 import axiosLib from 'axios'
 import type { AxiosInstance } from 'axios'
-import { fail } from '@shared/result'
+import { fail, ok } from '@shared/result'
+import { isSafeExternalUrl } from '@shared/utils'
 import type { StorageManager } from './storage'
 
 export interface SDKDeps {
@@ -49,7 +51,7 @@ export function resolvePluginViewRequest(
 
 /**
  * 注入到插件沙箱的 lp 命名空间（主进程专属类型定义）。
- * 收敛后的能力：storage / commands / ui / axiosInstance / song / lyric / playlist
+ * 收敛后的能力：storage / commands / ui / utils / axiosInstance / song / lyric / playlist
  */
 export interface LpSdk {
     storage: {
@@ -87,6 +89,10 @@ export interface LpSdk {
         handle(action: string, handler: (event: ViewEvent) => unknown): void
         /** 接收视图的单向事件；`@` 开头为宿主系统事件（@opened / @closed） */
         on(action: string, handler: (event: ViewEvent) => void): void
+    }
+    utils: {
+        /** 用系统默认浏览器打开外部链接；仅放行 http/https */
+        openExternal(url: string): Promise<Result<boolean>>
     }
     axiosInstance: AxiosInstance
     song: {
@@ -225,6 +231,21 @@ export function createPluginSDK(deps: SDKDeps): LpSdk {
 
             on: (action: string, handler: (event: ViewEvent) => void) => {
                 registerCommand(`__view_listener__:${action}`, handler as (...args: unknown[]) => unknown)
+            },
+        },
+
+        // ---- 工具 ----
+        utils: {
+            openExternal: async (url: string) => {
+                if (!isSafeExternalUrl(url)) {
+                    return fail('仅允许打开 http/https 链接')
+                }
+                try {
+                    await shell.openExternal(url)
+                    return ok(true)
+                } catch (e) {
+                    return fail(e instanceof Error ? e.message : String(e))
+                }
             },
         },
 

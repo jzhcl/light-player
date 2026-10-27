@@ -200,6 +200,20 @@ export function normalizePath(path?: string): string {
 }
 
 /**
+ * 判定可否安全交给系统默认浏览器打开：仅放行 http/https 绝对地址。
+ * 拦截 javascript:/data:/file: 等可被 shell.openExternal 利用的协议。
+ */
+export function isSafeExternalUrl(url: unknown): url is string {
+    if (typeof url !== 'string') return false
+    try {
+        const parsed = new URL(url)
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+    } catch {
+        return false
+    }
+}
+
+/**
  * 比较两段三段式版本号。返回 >0 表示 a 更新，<0 表示 a 更旧，0 表示相同。
  *
  * @example
