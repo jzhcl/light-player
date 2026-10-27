@@ -1,10 +1,11 @@
 // 插件加载器：扫描插件目录、读取并校验 plugin.json、提供源码读取
 
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs'
 import { PATHS } from '@main/constants/paths'
 import { log } from '@main/log'
 import { formatError } from '@shared/result'
+import { compareVersion } from '@shared/utils'
 
 
 export function validatePluginId(id: string): string | null {
@@ -159,6 +160,21 @@ export function createPluginLoader(): PluginLoader {
             if (error) {
                 log.warn(`[plugin] 跳过 ${entry}：清单校验未通过（${error}）`)
                 continue
+            }
+
+            // 同一个 id 出现在多个目录（升级时留了旧目录、手动备份）时按版本取最新。
+            // 不做这一步的话，胜出者只是「目录名字典序最后」的那份，与版本新旧无关。
+            const prev = manifests.get(parsed.id)
+            if (prev) {
+                const prevDirName = basename(dirs.get(parsed.id) || '')
+                const cmp = compareVersion(parsed.version, prev.version)
+                log.warn(
+                    `[plugin] 插件目录重复：${parsed.id} 同时存在于 ${prevDirName}(${prev.version}) 与 ${entry}(${parsed.version})，` +
+                        (cmp === 0
+                            ? `版本相同，保留 ${prevDirName}`
+                            : `保留版本较高的 ${cmp > 0 ? entry : prevDirName}`),
+                )
+                if (cmp <= 0) continue
             }
 
             manifests.set(parsed.id, parsed)
