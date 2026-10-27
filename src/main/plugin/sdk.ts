@@ -98,9 +98,13 @@ export interface LpSdk {
         update(songId: string, data: LP.Plugin.SongLyric): Promise<unknown>
     }
     playlist: {
+        /** 宿主全部歌单（内置「我喜欢」写死在前，其余整行透传），pic 已收敛成可渲染 URL */
+        getAll(): Promise<LP.Plugin.PlaylistInfo[]>
         create(data: LP.Plugin.Playlist): Promise<string | undefined>
         delete(id: string): Promise<boolean>
+        /** 往 'liked' 加歌 = 标记喜欢 */
         addSong(playlistId: string, songId: string): Promise<unknown>
+        /** 从 'liked' 移除 = 取消喜欢 */
         removeSong(playlistId: string, songId: string): Promise<unknown>
     }
 }
@@ -245,8 +249,10 @@ export function createPluginSDK(deps: SDKDeps): LpSdk {
                 invokeRenderer('lyric:update', songId, data),
         },
 
-        // ---- 歌单数据写操作（异步，经渲染进程执行）----
+        // ---- 歌单数据读写（异步，经渲染进程执行）----
         playlist: {
+            getAll: async (): Promise<LP.Plugin.PlaylistInfo[]> =>
+                (await invokeRenderer('playlist:getAll')) as LP.Plugin.PlaylistInfo[],
             create: async (data: LP.Plugin.Playlist): Promise<string | undefined> => {
                 data.pluginId = pluginId
                 const result = await invokeRenderer('playlist:create', data)

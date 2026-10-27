@@ -2,6 +2,9 @@ import { usePluginStore } from '@renderer/store'
 import type { OpenViewOutcome } from '@renderer/store/pluginStore'
 import { isOk } from '@shared/result'
 import { message } from '@renderer/lib/message'
+import { LIKED_PLAYLIST_ID, LIKED_PLAYLIST_NAME } from '@renderer/lib/constants'
+import { getAllPlaylists } from '@renderer/lib/db'
+import { toFileUrl } from '@renderer/lib/utils'
 import { findViewByWindow, pushToFrame, requestFrame, replyToFrame } from './viewBridge'
 import {
     sendPluginViewMessage,
@@ -14,6 +17,8 @@ import {
     createSongFromPlugin,
     updateSongFromPlugin,
     deleteSong,
+    markSongLike,
+    unmarkSongLike,
 } from '@renderer/features/song/songService'
 import { saveSongLyric } from '@renderer/features/lyrics/songLyricService'
 import {
@@ -247,6 +252,20 @@ async function handleViewWindowMessage(e: MessageEvent): Promise<void> {
     }
 }
 
+/** 插件可见的歌单列表：内置「我喜欢」 */
+function toPluginPlaylists(rows: LP.Playlist[]): LP.Plugin.PlaylistInfo[] {
+    return [
+        { id: LIKED_PLAYLIST_ID, name: LIKED_PLAYLIST_NAME, pluginId: 'local' },
+        ...rows.filter((p) => p.id !== LIKED_PLAYLIST_ID).map(toPluginPlaylist),
+    ]
+}
+
+/** 把封面收敛成可直接渲染的 URL（本地副本优先，与 `Cover` 取图同序） */
+function toPluginPlaylist(p: LP.Playlist): LP.Plugin.PlaylistInfo {
+    const pic = typeof p.pic === 'string' ? p.pic : p.pic?.path ? toFileUrl(p.pic.path) : p.pic?.url
+    return { ...p, pic: pic || undefined }
+}
+
 async function handleSdkInvoke(
     requestId: string,
     pluginId: string,
@@ -312,16 +331,35 @@ async function handleSdkInvoke(
                 else result = true
                 break
             }
+            case 'playlist:getAll': {
+                const r = await getAllPlaylists()
+                if (!isOk(r)) error = r.error
+                else result = toPluginPlaylists(r.value)
+                break
+            }
             case 'playlist:addSong': {
-                const r = await addSongToPlaylist(args[0] as string, args[1] as string)
+                const playlistId = args[0] as string
+                const songId = args[1] as string
+                const r =
+                    playlistId === LIKED_PLAYLIST_ID
+                        ? await markSongLike(songId)
+                        : await addSongToPlaylist(playlistId, songId)
                 if (!isOk(r)) error = r.error
                 else result = true
                 break
             }
             case 'playlist:removeSong': {
-                const r = await removeSongFromPlaylist(args[0] as string, args[1] as string)
-                if (!isOk(r)) error = r.error
-                else result = true
+                const playlistId = args[0] as string
+                const songId = args[1] as string
+                if (playlistId === LIKED_PLAYLIST_ID) {
+                    const r = await unmarkSongLike(songId)
+                    if (!isOk(r)) error = r.error
+                    else result = true
+                } else {
+                    const r = await removeSongFromPlaylist(playlistId, songId)
+                    if (!isOk(r)) error = r.error
+                    else result = true
+                }
                 break
             }
             default:

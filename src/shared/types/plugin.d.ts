@@ -227,5 +227,28 @@ declare namespace LP {
             pluginId: string
             [property: string]: unknown
         }
+
+        /**
+         * 宿主歌单（`lp.playlist.getAll()` 的返回项），内置「我喜欢」。
+         * `pic` 收敛成可直接渲染的 URL。
+         */
+        interface PlaylistInfo {
+            /** 歌单 ID，可直接用于 addSong / removeSong；内置「我喜欢」固定为 `liked` */
+            id: string
+            /** 来源插件标识；内置「我喜欢」为 `local` */
+            pluginId: string
+            /** 歌单名称 */
+            name: string
+            /** 歌单描述 */
+            description?: string
+            /** 封面 URL，可直接用作 img src；无封面时缺省 */
+            pic?: string
+            /** 其他元数据（宿主或插件自定义） */
+            meta?: Record<string, unknown>
+            /** 创建时间，YYYY-MM-DD HH:mm:ss；内置「我喜欢」由宿主写死，无此字段 */
+            createdAt?: string
+            /** 最后更新时间，YYYY-MM-DD HH:mm:ss；内置「我喜欢」由宿主写死，无此字段 */
+            updatedAt?: string
+        }
     }
 }
