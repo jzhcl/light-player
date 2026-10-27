@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+# 约定式提交校验（commit-msg hook）。
+#
+# 启用方式（一次性）：
+#   git config core.hooksPath scripts/git-hooks
+#
+# 通过 `core.hooksPath` 指向本目录，而不是塞进 .git/hooks。
+#
+# 想临时跳过：git commit --no-verify
+
+msg_file="$1"
+first_line=$(head -n1 "$msg_file")
+
+# 合并 / 回滚 / 自动生成的提交放行
+case "$first_line" in
+    "Merge "*|"Revert "*|"revert:"*|"fixup! "*|"squash! "*|"amend! "*) exit 0 ;;
+esac
+
+# 空消息交给 git 自己报错（一般是编辑器没填内容）
+[ -z "$first_line" ] && exit 0
+
+pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9._-]+\))?: .+'
+
+if ! printf '%s' "$first_line" | grep -Eq "$pattern"; then
+    echo "" >&2
+    echo "✗ 提交信息不符合约定式提交格式" >&2
+    echo "" >&2
+    echo "  格式：<type>(<scope>)?: <描述>" >&2
+    echo "  type ：feat fix docs style refactor perf test build ci chore revert" >&2
+    echo "  scope：可选，例如 update / player / lyric / theme" >&2
+    echo "" >&2
+    echo "  例：feat(search): 支持按拼音首字母过滤" >&2
+    echo "      fix(update): 断网时检查更新不再无限转圈" >&2
+    echo "      docs: 补充快捷键说明" >&2
+    echo "" >&2
+    echo "  当前：$first_line" >&2
+    echo "" >&2
+    exit 1
+fi

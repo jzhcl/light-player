@@ -1,0 +1,54 @@
+/* ================================================================
+   浅色主题 · 标题栏与搜索
+   ================================================================ */
+
+.titlebar-songstatus {
+    color: var(--color-text-tertiary);
+}
+
+.searchbox {
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+.searchbox-input {
+    caret-color: var(--color-text-primary);
+}
+
+.searchbox.is-composing .searchbox-input {
+    color: var(--color-text-primary);
+}
+
+.searchbox-input::placeholder {
+    color: var(--color-text-placeholder);
+}
+
+.searchbox-preview-typed {
+    color: var(--color-text-primary);
+}
+
+.searchbox-preview-ghost {
+    color: var(--color-text-secondary);
+}
+
+.searchbox-panel {
+    background-color: var(--color-surface);
+    border-color: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.searchbox-group + .searchbox-group {
+    border-top-color: rgba(0, 0, 0, 0.08);
+}
+
+.searchbox-group-title {
+    color: var(--color-text-tertiary);
+}
+
+.searchbox-item.is-active {
+    background-color: rgba(0, 0, 0, 0.06);
+}
+
+.searchbox-item-sub,
+.searchbox-item-source {
+    color: var(--color-text-tertiary);
+}

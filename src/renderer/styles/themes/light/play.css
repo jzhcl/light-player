@@ -1,0 +1,128 @@
+/* ================================================================
+   浅色主题 · 播放页
+   ⚠️ 当前行与逐字高亮层必须同字重，否则重叠文本会错位。
+   ================================================================ */
+
+.play-overlay {
+    background-color: var(--color-fill);
+    color: var(--color-text-primary);
+}
+
+/* 封面模糊放大的罩层：兼顾底色辨识与文字可读 */
+.play-veil {
+    --play-veil: rgba(255, 255, 255, 0.68);
+}
+
+img.play-bg-img {
+    --play-bg-blur: blur(64px) saturate(1.25) brightness(1.08);
+}
+
+.play-name {
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+
+.play-sub {
+    color: var(--color-text-secondary);
+}
+
+.play-vol-ring {
+    --play-vol-track: rgba(0, 0, 0, 0.10);
+}
+
+/* 白心 + 主色描边，避免指示点压在同色的弧上 */
+.play-vol-handle::after {
+    background-color: var(--color-surface);
+    box-shadow: 0 0 0 1.5px var(--color-primary);
+}
+
+/* 悬停只提亮图标，不加实色底 */
+.play-vol-icon {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+}
+
+.play-vol:hover .play-vol-icon {
+    color: var(--color-text-primary);
+}
+
+/* 歌词区上下渐隐 */
+.play-lyric {
+    -webkit-mask-image: linear-gradient(to bottom,
+        transparent 0%, #000 10%, #000 90%, transparent 100%);
+    mask-image: linear-gradient(to bottom,
+        transparent 0%, #000 10%, #000 90%, transparent 100%);
+}
+
+.play-lyric--empty {
+    color: var(--color-text-tertiary);
+}
+
+.play-lyric-line {
+    color: var(--color-text-tertiary);
+    opacity: 0.32;
+}
+
+.play-lyric-line[data-d='1'] {
+    opacity: 0.7;
+}
+
+.play-lyric-line:not(.is-active):hover {
+    opacity: 0.9;
+}
+
+.play-lyric-line.is-active {
+    color: var(--color-primary);
+    font-weight: 600;
+    opacity: 1;
+}
+
+.play-lyric .karaoke-word-base {
+    color: var(--color-text-tertiary);
+}
+
+.play-lyric .karaoke-word-highlight {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.play-lyric-translation {
+    color: var(--color-text-tertiary);
+    font-weight: 400;
+}
+
+.play-lyric-line.is-active .play-lyric-translation {
+    color: var(--color-text-secondary);
+}
+
+/* 进度与控制 */
+.play-time {
+    color: var(--color-text-tertiary);
+}
+
+.play-button {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.play-button:disabled {
+    opacity: 0.4;
+}
+
+/* 悬停不加背景，只提亮图标 */
+.play-button:hover:not(:disabled) {
+    color: var(--color-text-primary);
+}
+
+.play-button.is-active,
+.play-button.is-active:hover:not(:disabled) {
+    color: var(--color-primary);
+}
+
+/* 实心播放键的优先级最高 */
+.play-button--play,
+.play-button--play:hover:not(:disabled) {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+}

@@ -1,0 +1,29 @@
+/* 图标几何。
+   尺寸由组件以 --icon-size 传入，默认 16px；颜色不在此处定义：
+   两种模式（svgr 组件 / CSS mask）都用 currentColor，由父级 color 决定，即由主题文件控制。 */
+
+.icon {
+    width: var(--icon-size, 16px);
+    height: var(--icon-size, 16px);
+    flex-shrink: 0;
+    display: block;
+}
+
+.icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.icon--mask {
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+}
+
+.icon.is-hidden {
+    display: none;
+}

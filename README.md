@@ -1,90 +1,43 @@
-# LightPlayer
+<p align="center">
+  <a href="https://github.com/jzhcl/light-player">
+    <img width="140" src="docs/images/icon.png" alt="LightPlayer logo">
+  </a>
+</p>
 
-一个本地优先的 Windows 音乐播放器：曲库放在自己电脑上，界面、音源和歌词都能按习惯替换。
+<h1 align="center">LightPlayer</h1>
 
-![最新版本](https://img.shields.io/github/v/release/jzhcl/light-player) ![平台](https://img.shields.io/badge/platform-Windows%20x64-lightgrey)
+<p align="center">
+  <a href="https://github.com/jzhcl/light-player/releases"><img src="https://img.shields.io/github/v/release/jzhcl/light-player" alt="Release version"></a>
+  <a href="https://github.com/jzhcl/light-player/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jzhcl/light-player" alt="License"></a>
+</p>
+<p align="center">一个支持插件扩展的本地音乐播放器</p>
 
----
+## 说明
 
-## 功能
+已支持的平台：
 
-### 曲库
+- Windows 10 / 11（x64）
 
-- **目录导入** —— 选一个目录批量扫描，自动读取标题、歌手、专辑、时长与内嵌封面
-- **文件检查** —— 定时检测音频文件是否被移动或删除，在列表里标出缺失项，可从资料库一键移除
-- **歌单** —— 内置「我喜欢」，也可自建；支持重命名、删除、拖拽排序、自定义封面
-- **最近播放** —— 按时间倒序，超出上限的记录自动裁剪
+软件变化请查看[更新日志](https://github.com/jzhcl/light-player/blob/main/CHANGELOG.md)。
 
-### 播放
+软件下载请查看 [GitHub Releases](https://github.com/jzhcl/light-player/releases)。
 
-- **播放队列** —— 拖拽调整顺序，双击立即播放
-- **三种播放模式** —— 列表循环 / 单曲循环 / 随机
-- **五档音质** —— 标准、高品、无损、Hi-Res、母带。选定的档位不可用时自动就近回退，本地文件永远兜底
-- **失败自动切换** —— 当前歌曲打不开时自动跳下一首，连续失败 3 首才停下
-- **启动恢复** —— 记住上次播放的歌曲、进度和队列
+> [!NOTE]
+> 首次安装时 Windows SmartScreen 会提示「未知发布者」，
+> 点「更多信息」→「仍要运行」即可。
 
-### 搜索
+## 应用界面
 
-- **多音源并列** —— 每个插件一个标签页，也可以合并成一页跨音源浏览
-- **拼音搜索** —— 输入拼音全拼或首字母即可匹配本地歌曲
-- **搜索建议与热搜** —— 由插件提供
+<p><img width="100%" src="./docs/images/img1.png" alt="歌单详情"></p>
+<p><img width="100%" src="./docs/images/img2.png" alt="播放页"></p>
+<p><img width="100%" src="./docs/images/img3.png" alt="设置"></p>
 
-### 歌词
+## 数据存储目录
 
-- **逐字歌词** —— 支持普通歌词与逐字歌词（KRC），逐字高亮当前唱到的字
-- **播放页歌词** —— 整页滚动，当前行自动居中
-- **桌面歌词** —— 独立窗口，可脱离主界面常驻桌面；配色方案、字体、行数、对齐方式都可调，锁定后不挡鼠标操作
+默认情况下，软件的数据存储在：
 
-### 界面
+- Windows：`%APPDATA%/light-player`
 
-- **主题** —— 内置浅色 / 深色；把一份自定义主题（CSS）放进主题目录即可切换，可选择继承内置样式或完全自定义
-- **自绘标题栏** —— Windows 下支持窗口背景材质
-- **播放页浮层** —— 全屏沉浸式播放，不打断当前浏览位置
-- **窄窗自适应** —— 窗口过窄时导航栏自动收起，内容区不被挤压
+## 项目协议
 
-### 扩展
-
-- **插件** —— 插件可以提供搜索源、播放链接和歌词；安装后在设置里启用、停用、卸载，也能在设置页或独立面板里提供自己的界面
-- **主题包** —— 一个目录就是一套主题，换主题不用改程序
-
-### 系统集成
-
-- **全局快捷键** —— 媒体键与自定义全局热键，可在设置里逐个开关
-- **系统托盘** —— 托盘菜单控制播放与显隐；关闭窗口可选择最小化到托盘而不是退出
-- **自动更新** —— 内置检查 / 下载 / 安装，支持差分下载；可关掉自动下载改为手动确认，升级后首次启动会展示本次更新内容
-
----
-
-## 安装
-
-1. 打开 [Releases](https://github.com/jzhcl/light-player/releases/latest)
-2. 下载 `LightPlayer-<版本>-x64-setup.exe`
-3. 运行安装程序，可选择「为所有用户安装」或「仅当前用户」
-
-> **首次运行提示「未知发布者」？** 本项目没有购买代码签名证书，Windows SmartScreen 会拦一次。点「更多信息」→「仍要运行」即可。
-
-**系统要求**：Windows 10 / 11（x64）
-
----
-
-## 快捷键
-
-应用内快捷键在窗口聚焦时生效；全局快捷键默认关闭，需在「设置 → 快捷键」中开启。
-
-| 操作 | 应用内 | 全局 |
-| --- | --- | --- |
-| 上一首 | `Ctrl` + `←` | `Ctrl` + `Alt` + `←` |
-| 下一首 | `Ctrl` + `→` | `Ctrl` + `Alt` + `→` |
-| 音量 + | `Ctrl` + `↑` | `Ctrl` + `Alt` + `↑` |
-| 音量 − | `Ctrl` + `↓` | `Ctrl` + `Alt` + `↓` |
-| 快进 / 快退 | `→` / `←` | — |
-| 播放 / 暂停 | `Space` | `Ctrl` + `Alt` + `P` |
-| 显示 / 隐藏主窗 | — | `Ctrl` + `Alt` + `W` |
-
-以上全部可自定义。
-
----
-
-## 反馈
-
-遇到问题或有建议，欢迎提 [Issue](https://github.com/jzhcl/light-player/issues)。附上版本号（设置 → 关于 里能看到完整 commit）和复现步骤会快很多。
+本项目基于 [Apache License 2.0](https://github.com/jzhcl/light-player/blob/main/LICENSE) 许可证发行。

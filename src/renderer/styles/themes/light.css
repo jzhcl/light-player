@@ -1,0 +1,37 @@
+/* ================================================================
+   内置浅色主题
+   ================================================================ */
+
+@import './light/titlebar.css';
+@import './light/navbar.css';
+@import './light/control.css';
+@import './light/components.css';
+@import './light/song-list.css';
+@import './light/content-page.css';
+@import './light/settings.css';
+@import './light/play.css';
+@import './light/settings-page.css';
+
+:root {
+    /* 主题色 */
+    --color-primary: rgb(230, 0, 83);
+    --color-primary-rgb: 230, 0, 83;
+
+    /* 文字 */
+    --color-text-primary: rgba(0, 0, 0, 0.85);
+    --color-text-secondary: rgba(0, 0, 0, 0.65);
+    --color-text-tertiary: rgba(0, 0, 0, 0.45);
+    --color-text-inverse: rgb(255, 255, 255);
+    --color-text-placeholder: rgba(0, 0, 0, 0.35);
+
+    /* 画布与表面：surface 用于浮层 / 弹窗 / Tooltip */
+    --color-fill: rgb(245, 246, 248);
+    --color-surface: rgb(255, 255, 255);
+
+    /* 分割线 */
+    --color-divider: rgba(0, 0, 0, 0.08);
+
+    /* 危险 */
+    --color-danger: rgb(226, 75, 74);
+    --color-danger-rgb: 226, 75, 74;
+}

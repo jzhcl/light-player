@@ -1,0 +1,848 @@
+/* ================================================================
+   通用组件几何（components）：跨区域复用，一处定义处处生效。
+   封面 / 列表行 → 基础控件 → 滚动与滑块 → 表单控件 → 浮层。
+   ================================================================ */
+
+/* ===== 封面占位（Cover 组件）===== */
+.cover-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cover-placeholder svg {
+    width: 55%;
+    height: 55%;
+}
+
+/* ListView 行容器基类 */
+.list-row {
+    outline: none;
+}
+
+/* ===== 图标按钮===== */
+.icon-button {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.icon-button--sm {
+    width: 30px;
+    height: 30px;
+}
+
+.icon-button:disabled {
+    cursor: default;
+}
+
+/* ===== 音频波形条（播放中标记）===== */
+.wave {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    height: 14px;
+}
+
+.wave-bar {
+    width: 2px;
+    height: 100%;
+    border-radius: 1px;
+    transform-origin: center;
+    animation: wave-pulse 0.9s ease-in-out infinite;
+}
+
+.wave-bar:nth-child(1) {
+    height: 45%;
+    animation-delay: 0s;
+}
+
+.wave-bar:nth-child(2) {
+    height: 85%;
+    animation-delay: 0.15s;
+}
+
+.wave-bar:nth-child(3) {
+    height: 60%;
+    animation-delay: 0.3s;
+}
+
+.wave-bar:nth-child(4) {
+    height: 100%;
+    animation-delay: 0.45s;
+}
+
+@keyframes wave-pulse {
+    0%,
+    100% {
+        transform: scaleY(0.4);
+    }
+
+    50% {
+        transform: scaleY(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .wave-bar {
+        animation: none;
+    }
+}
+
+/* ===== ScrollArea===== */
+.scroll-area {
+    position: relative;
+    overflow: hidden;
+}
+
+.scroll-area-view {
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.scroll-area-view::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
+.scroll-area-thumb {
+    position: absolute;
+    right: 2px;
+    width: 6px;
+    border-radius: 3px;
+    cursor: grab;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.scroll-area-thumb.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.scroll-area-thumb:active {
+    cursor: grabbing;
+}
+
+/* ===== 滑块（Radix Slider）===== */
+.slider {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    height: 16px;
+    touch-action: none;
+    user-select: none;
+    cursor: pointer;
+}
+
+.slider[data-disabled] {
+    cursor: not-allowed;
+}
+
+.slider-track {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    height: 4px;
+    border-radius: 2px;
+}
+
+.slider-range {
+    position: absolute;
+    left: 0;
+    height: 100%;
+    border-radius: 2px;
+}
+
+.slider-thumb {
+    display: block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    outline: none;
+}
+
+/* 拖拽用 .is-dragging 兜住指针移出元素后 :hover 失效；键盘走 :focus-visible */
+.slider--auto-hide .slider-thumb {
+    opacity: 0;
+}
+
+.slider--auto-hide:hover .slider-thumb,
+.slider--auto-hide.is-dragging .slider-thumb,
+.slider--auto-hide .slider-thumb:focus-visible {
+    opacity: 1;
+}
+
+/* ===== 复选框 ===== */
+.checkbox {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    padding: 0;
+    border-width: 1.5px;
+    border-style: solid;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.checkbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+.checkbox-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.checkbox svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* ===== 下拉选择器（Radix Select）===== */
+.select {
+    display: inline-block;
+}
+
+.select-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    min-width: 92px;
+    height: 28px;
+    padding: 0 10px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+}
+
+.select-trigger:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.select-caret {
+    flex-shrink: 0;
+    transition: transform 0.18s ease;
+}
+
+.select-trigger[data-state='open'] .select-caret {
+    transform: rotate(180deg);
+}
+
+.select-content {
+    position: relative;
+    z-index: var(--z-popover);
+    min-width: var(--radix-select-trigger-width);
+    border-radius: 8px;
+    border-width: 1px;
+    border-style: solid;
+    overflow: hidden;
+}
+
+.select-viewport {
+    padding: 4px;
+    max-height: min(40vh, var(--radix-select-content-available-height, 40vh));
+    overflow-y: auto;
+}
+
+.select-option {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 28px 0 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    outline: none;
+}
+
+.select-item-indicator {
+    position: absolute;
+    right: 8px;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Content 只动 opacity；展开动画放在内层，避开 Popper 在 Content 上的 translate */
+.select-content[data-state='open'] {
+    animation: popover-fade-in 160ms ease-out;
+}
+
+.select-content[data-state='closed'] {
+    animation: popover-fade-out 120ms ease-in;
+}
+
+.select-inner {
+    transform-origin: top center;
+}
+
+.select-content[data-state='open'] .select-inner {
+    animation: select-reveal-in 160ms ease-out;
+}
+
+.select-content[data-state='closed'] .select-inner {
+    animation: select-reveal-out 120ms ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .select-content,
+    .select-content .select-inner {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}
+
+/* ===== Popover 浮层 ===== */
+.popover {
+    z-index: var(--z-popover);
+}
+
+/* 壳层只动 opacity，避开 Popper 的定位 transform */
+.popover[data-state='open'] {
+    animation: popover-fade-in 160ms ease-out;
+}
+
+.popover[data-state='closed'] {
+    animation: popover-fade-out 120ms ease-in;
+}
+
+/* 常驻浮层（keepMounted） */
+.popover--persist[data-state='closed'] {
+    animation: popover-exit 120ms ease-in forwards;
+    pointer-events: none;
+}
+
+@keyframes popover-exit {
+    from { opacity: 1; display: block; }
+    to { opacity: 0; display: none; }
+}
+
+.popover-inner {
+    padding: 10px 12px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 8px;
+    min-width: 180px;
+    max-width: 260px;
+    /* 原点跟随 Radix 计算的浮层出现位置 */
+    transform-origin: var(--radix-popover-content-transform-origin);
+}
+
+/* 可见载体交给调用方自己的元素 */
+.popover--bare > .popover-inner {
+    padding: 0;
+    border-width: 0;
+    min-width: 0;
+    max-width: none;
+}
+
+.popover[data-state='open'] .popover-inner {
+    animation: popover-pop-in 160ms ease-out;
+}
+
+.popover[data-state='closed'] .popover-inner {
+    animation: popover-pop-out 120ms ease-in;
+}
+
+@keyframes popover-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes popover-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes popover-pop-in {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes popover-pop-out {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.92); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .popover,
+    .popover-inner {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}
+
+.popover-arrow {
+    width: 10px;
+    height: 10px;
+}
+
+.popover-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.popover-confirm-text {
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.popover-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.popover-confirm-cancel,
+.popover-confirm-ok {
+    height: 28px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+}
+
+/* ===== Message 通知 ===== */
+.message-host {
+    position: fixed;
+    /* 让出底部控制栏（约 75px）并留 25px */
+    bottom: 100px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: var(--z-message);
+    pointer-events: none;
+}
+
+/* 位移与缩放由内联样式按 visualIndex 注入，此处只负责过渡与入场 */
+.message-item {
+    position: absolute;
+    bottom: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 420px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    transition: transform 500ms cubic-bezier(0.2, 1, 0.3, 1), z-index 200ms;
+    animation: message-in 500ms cubic-bezier(0.2, 1, 0.3, 1);
+}
+
+/* 离场与堆叠位移共用同一条 transition */
+.message-item.is-leaving {
+    opacity: 0;
+    transition: transform 500ms cubic-bezier(0.2, 1, 0.3, 1), z-index 200ms, opacity 400ms ease;
+}
+
+.message-item-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+}
+
+.message-item-text {
+    min-width: 0;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.message-item-close {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    background: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+@keyframes message-in {
+    from {
+        transform: translateY(60px) scale(0.6);
+    }
+}
+
+/* 父级 opacity < 1 会让子元素 backdrop-filter 失效（Chromium），
+   故淡入淡出只作用在内容上，容器恒为 opacity: 1 */
+.message-item-icon,
+.message-item-text,
+.message-item-close {
+    animation: message-content-in 400ms ease;
+}
+
+.message-item.is-leaving .message-item-icon,
+.message-item.is-leaving .message-item-text,
+.message-item.is-leaving .message-item-close {
+    opacity: 0;
+    transition: opacity 400ms ease;
+}
+
+@keyframes message-content-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .message-item,
+    .message-item.is-leaving,
+    .message-item-icon,
+    .message-item-text,
+    .message-item-close {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ===== Modal 浮层几何 =====
+   z-index = 基准 + 2 × depth（见 lib/modalDepth.ts），保证每层遮罩只压住它下面的层 */
+.modal-mask {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-modal-mask) + 2 * var(--modal-depth, 0));
+}
+
+/* 透明容器，仅用于居中与「点击蒙层关闭」命中区；wrap 须高于同层 mask */
+.modal-wrap {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-modal) + 2 * var(--modal-depth, 0));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+    outline: none;
+}
+
+/* 外壳盒：靠父级 flex 居中，scale 动画只围绕自身中心。
+   padding 恒为 0：滑块定位祖先是 .modal-scroll，其右边界即外壳盒的 padding box。
+   边界靠主题层 box-shadow 而非 border：1px 边框在缩放进场时有亚像素抖动。 */
+.modal-container {
+    position: relative;
+    margin: 0 auto;
+    border-radius: 8px;
+    padding: 0;
+    min-width: 320px;
+    transform-origin: center;
+}
+
+/* 程序内对话框：高度链 外壳盒 → .modal-layout → .modal-scroll，每环都要 min-height: 0 */
+.modal--dialog.modal-container {
+    display: flex;
+    flex-direction: column;
+    max-height: min(85vh, 600px);
+}
+
+.modal-layout {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.modal-title {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 16px 16px 12px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+}
+
+.modal-scroll {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+/* 视口不设内边距（在 .modal-content 上，滑块才贴边） */
+.modal-scroll-view {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.modal-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
+    padding: 14px 16px 16px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* 滑块唯一的场景差异：距外壳盒边框内侧 4px */
+.modal-scroll-thumb {
+    right: 4px;
+}
+
+/* 固定底栏 */
+.modal-footer {
+    display: flex;
+    flex: 0 0 auto;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 16px 16px;
+    border-top-width: 1px;
+    border-top-style: solid;
+}
+
+/* 进场 / 退场由 Radix 的 data-state 驱动，Presence 会等动画结束再卸载 */
+.modal-mask[data-state='open'] {
+    animation: modal-mask-in 0.18s ease;
+}
+
+.modal-mask[data-state='closed'] {
+    animation: modal-mask-out 0.18s ease forwards;
+}
+
+.modal-wrap[data-state='open'] {
+    animation: modal-wrap-in 0.18s ease;
+}
+
+.modal-wrap[data-state='closed'] {
+    animation: modal-wrap-out 0.18s ease forwards;
+}
+
+/* 面板只缩放、不承担透明度：整片淡入淡出由 .modal-wrap 驱动，避免双重淡出 */
+.modal-wrap[data-state='open'] .modal-container {
+    animation: modal-container-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.modal-wrap[data-state='closed'] .modal-container {
+    animation: modal-container-out 0.18s ease forwards;
+}
+
+@keyframes modal-mask-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modal-mask-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes modal-wrap-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modal-wrap-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes modal-container-in {
+    from { transform: scale(0.96); }
+    to { transform: scale(1); }
+}
+
+@keyframes modal-container-out {
+    from { transform: scale(1); }
+    to { transform: scale(0.98); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modal-mask,
+    .modal-wrap,
+    .modal-wrap .modal-container {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}
+
+/* 插件视图：外壳盒尺寸 = 插件声明尺寸，上限用 max-* 让窗口 resize 自动跟随 */
+.modal--plugin-view.modal-container {
+    min-width: 0;
+    overflow: hidden;
+    max-width: calc(100vw - 48px);
+    max-height: calc(100vh - 48px);
+}
+
+.plugin-view-frame {
+    display: block;
+}
+
+iframe {
+    width: 100%;
+    height: 100%;
+}
+
+/* ===== Tippy / Tooltip 浮层几何 ===== */
+.tippy-content {
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    z-index: var(--z-tooltip);
+}
+
+/* ===== 右键菜单（Radix ContextMenu，Portal 到 body）=====
+   使用处经 menuClassName 传入修饰类；max-height 取 Radix 注入的可用高度 */
+.context-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 176px;
+    max-width: 320px;
+    max-height: min(60vh, var(--radix-context-menu-content-available-height, 60vh));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 5px;
+    border-radius: 10px;
+    border-width: 1px;
+    border-style: solid;
+    font-size: 13px;
+    line-height: 1.4;
+    scrollbar-width: none;
+    z-index: var(--z-popover);
+    transform-origin: var(--radix-context-menu-content-transform-origin);
+    animation: menu-pop 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.context-menu::-webkit-scrollbar {
+    display: none;
+}
+
+.context-menu--sub {
+    animation: submenu-pop 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes menu-pop {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes submenu-pop {
+    from {
+        opacity: 0;
+        transform: translateX(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    height: 32px;
+    padding: 0 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: default;
+    outline: none;
+    user-select: none;
+}
+
+.context-menu-item[data-disabled] {
+    opacity: 0.38;
+    pointer-events: none;
+}
+
+.context-menu-item .icon {
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+.context-menu-item[data-highlighted] .icon {
+    opacity: 1;
+}
+
+/* 占位槽：保证与有图标项的文字左对齐 */
+.context-menu-icon-slot {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.context-menu:not(:has(.context-menu-item > .icon:first-child, .context-menu-item > .context-menu-thumb:first-child)) .context-menu-icon-slot {
+    display: none;
+}
+
+.context-menu-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.context-menu-arrow {
+    margin-left: auto;
+    opacity: 0.4;
+}
+
+.context-menu-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.context-menu-separator {
+    flex-shrink: 0;
+    height: 1px;
+    margin: 4px 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .context-menu,
+    .context-menu--sub {
+        animation-duration: 0.01ms;
+    }
+}

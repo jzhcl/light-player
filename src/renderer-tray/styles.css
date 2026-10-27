@@ -1,0 +1,366 @@
+/* 托盘菜单独立样式，仅跟随系统深浅色偏好 */
+
+:root {
+    color-scheme: light dark;
+
+    --menu-bg: #ffffff;
+    /* 浅底用一根很淡的边收口 + 一层软阴影浮起来 */
+    --menu-border: rgba(0, 0, 0, 0.06);
+    --menu-shadow: 0 4px 16px rgba(0, 0, 0, 0.13), 0 1px 3px rgba(0, 0, 0, 0.07);
+
+    --text-primary: #1b1b1f;
+    --text-secondary: #8a8a93;
+
+    --icon-primary: #46464d;
+    --icon-secondary: #8a8a93;
+
+    --hover: rgba(0, 0, 0, 0.05);
+    --active: rgba(0, 0, 0, 0.085);
+
+    --accent: rgb(230, 0, 83);
+    --accent-hover: rgb(205, 0, 74);
+    --play-fg: #ffffff;
+    --danger: #d8352f;
+    --danger-hover: rgba(216, 53, 47, 0.08);
+
+    --slider-track: rgba(0, 0, 0, 0.13);
+    --slider-fill: #46464d;
+    --slider-thumb: #ffffff;
+    --slider-thumb-border: #4a4a52;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --menu-bg: #26262a;
+        /* 深色不用边框：暗底上一圈亮边像贴了胶带。
+           改用「顶部 1px 内高光 + 更深的投影」表达层级 —— 光从上方来，边缘自然收口 */
+        --menu-border: transparent;
+        --menu-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+        --text-primary: #f1f1f4;
+        --text-secondary: #92929b;
+
+        --icon-primary: #e2e2e8;
+        --icon-secondary: #92929b;
+
+        --hover: rgba(255, 255, 255, 0.07);
+        --active: rgba(255, 255, 255, 0.11);
+
+        --accent: #ff4d8d;
+        --accent-hover: #ff6ba1;
+        --play-fg: #17171a;
+        --danger: #ff6b6e;
+        --danger-hover: rgba(255, 107, 110, 0.1);
+
+        --slider-track: rgba(255, 255, 255, 0.16);
+        --slider-fill: #dcdce2;
+        --slider-thumb: #26262a;
+        --slider-thumb-border: #d2d2d8;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    overflow: hidden;
+}
+
+body {
+    font-family: "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+    font-size: 12px;
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+}
+
+button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: default;
+}
+
+/* 与主渲染端 Icon 的几何约定一致：尺寸走 --icon-size，颜色继承父级 */
+.icon {
+    display: block;
+    flex: none;
+    width: var(--icon-size, 16px);
+    height: var(--icon-size, 16px);
+}
+
+.icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* 菜单类弹层不做键盘焦点环：与系统右键菜单一致，只靠 hover 反馈 */
+button:focus,
+input:focus {
+    outline: none;
+}
+
+/* ---------- 卡片骨架 ---------- */
+/* 卡片自身不留横向内边距：菜单项的 hover 因此可以通到左右两边，
+   像桌面客户端的弹层而不是一张网页卡片。内缩由各分区自己负责。 */
+
+.app {
+    width: 100%;
+    height: 100%;
+    padding: 12px;
+}
+
+.menu {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    border: 1px solid var(--menu-border);
+    border-radius: 10px;
+    background: var(--menu-bg);
+    box-shadow: var(--menu-shadow);
+    overflow: hidden;
+}
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 12px 10px;
+}
+
+/* ---------- 歌曲信息 ---------- */
+
+.song {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+}
+
+.song__title {
+    max-width: 100%;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 17px;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.song__title--empty {
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.song__artist {
+    max-width: 100%;
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 14px;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    /* 没有歌时内容为空，但这一行必须占位：卡片是固定高窗口，高度不能随状态变 */
+    min-height: 14px;
+}
+
+/* ---------- 播放控制 ---------- */
+
+.controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.ctl {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: var(--icon-primary);
+    transition: background-color 0.12s ease, color 0.12s ease, transform 0.08s ease;
+}
+
+.ctl:hover {
+    background: var(--hover);
+}
+
+.ctl:active {
+    background: var(--active);
+    transform: scale(0.94);
+}
+
+.ctl--play {
+    width: 38px;
+    height: 38px;
+    background: var(--accent);
+    color: var(--play-fg);
+}
+
+.ctl--play:hover {
+    background: var(--accent-hover);
+}
+
+.ctl--play:active {
+    background: var(--accent-hover);
+    transform: scale(0.94);
+}
+
+/* 两侧的开关（喜欢 / 播放模式）：小一号 + 次级色，别跟运输键抢视线 */
+.ctl--aux {
+    width: 28px;
+    height: 28px;
+    color: var(--icon-secondary);
+}
+
+.ctl--aux:hover {
+    color: var(--icon-primary);
+}
+
+.ctl--aux:disabled {
+    opacity: 0.4;
+}
+
+.ctl--aux:disabled:hover {
+    background: none;
+    color: var(--icon-secondary);
+}
+
+.ctl--aux.is-active,
+.ctl--aux.is-active:hover {
+    color: var(--accent);
+}
+
+/* ---------- 音量 ---------- */
+
+.volume {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) 26px;
+    align-items: center;
+    gap: 7px;
+    margin-top: 10px;
+    padding-bottom: 2px;
+}
+
+.volume__icon {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    color: var(--icon-secondary);
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.volume__icon:hover {
+    background: var(--hover);
+    color: var(--icon-primary);
+}
+
+.volume__icon:active {
+    background: var(--active);
+}
+
+.volume__value {
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.volume input {
+    width: 100%;
+    height: 3px;
+    margin: 0;
+    border-radius: 999px;
+    background: linear-gradient(
+        to right,
+        var(--slider-fill) var(--pct, 0%),
+        var(--slider-track) var(--pct, 0%)
+    );
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+}
+
+.volume input::-webkit-slider-thumb {
+    width: 11px;
+    height: 11px;
+    border: 1px solid var(--slider-thumb-border);
+    border-radius: 50%;
+    background: var(--slider-thumb);
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* 拖动 / 滚轮时音量条转成品牌色：给出「正在操作」的即时反馈 */
+.volume:hover input,
+.volume input:active {
+    background: linear-gradient(
+        to right,
+        var(--accent) var(--pct, 0%),
+        var(--slider-track) var(--pct, 0%)
+    );
+}
+
+/* ---------- 菜单项 ---------- */
+
+.items {
+    display: flex;
+    flex-direction: column;
+    padding: 4px 0;
+}
+
+.item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    height: 30px;
+    padding: 0 12px;
+    color: var(--text-primary);
+    font-size: 12px;
+    text-align: left;
+    transition: background-color 0.12s ease;
+}
+
+.item .icon {
+    color: var(--icon-secondary);
+    /* 两个菜单项图标（词 / 电源）的墨迹在各自 viewBox 里都偏高约 1px，
+       实测比标签文字中心高 0.9px，这里按像素补偿回对齐 */
+    transform: translateY(1px);
+}
+
+.item:hover {
+    background: var(--hover);
+}
+
+.item:active {
+    background: var(--active);
+}
+
+.item--danger:hover {
+    background: var(--danger-hover);
+    color: var(--danger);
+}
+
+.item--danger .icon,
+.item--danger:hover .icon {
+    color: var(--danger);
+}

@@ -1,0 +1,534 @@
+/* ================================================================
+   浅色主题 · 内容页（搜索 / 最近播放 / 我喜欢 / 歌单 / 本地与下载）
+   ================================================================ */
+
+/* 共用：标题与空态 */
+.content-title {
+    color: var(--color-text-primary);
+}
+
+.content-meta {
+    color: var(--color-text-tertiary);
+}
+
+/* 主色胶囊：接触阴影 + 主色辉光 */
+.content-play-btn {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(var(--color-primary-rgb), 0.32);
+    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.content-play-btn:hover:not(:disabled) {
+    background-color: rgba(var(--color-primary-rgb), 0.85);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 4px 14px rgba(var(--color-primary-rgb), 0.42);
+}
+
+.content-add-btn {
+    border-color: var(--color-divider);
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.content-add-btn:hover:not(:disabled) {
+    background-color: var(--color-fill);
+    color: var(--color-text-primary);
+}
+
+.content-empty {
+    color: var(--color-text-tertiary);
+}
+
+/* 共用：描边取消按钮 */
+.playlist-edit-cancel,
+.local-download-del-cancel,
+.dl-clear-cancel {
+    border-color: var(--color-divider);
+    background-color: transparent;
+    color: var(--color-text-secondary);
+}
+
+.playlist-edit-cancel:hover,
+.local-download-del-cancel:hover:not(:disabled),
+.dl-clear-cancel:hover:not(:disabled) {
+    background-color: var(--color-fill);
+    color: var(--color-text-primary);
+}
+
+/* 共用：实心危险按钮 */
+.local-download-del-danger,
+.dl-clear-danger {
+    background-color: var(--color-danger);
+    color: var(--color-text-inverse);
+}
+
+.local-download-del-danger:hover:not(:disabled),
+.dl-clear-danger:hover:not(:disabled) {
+    background-color: rgba(var(--color-danger-rgb), 0.85);
+}
+
+/* 搜索页 */
+.search-footer {
+    color: var(--color-text-tertiary);
+}
+
+.search-spinner {
+    border-color: rgba(0, 0, 0, 0.12);
+    border-top-color: var(--color-primary);
+}
+
+.search-retry,
+.content-retry {
+    background-color: var(--color-fill);
+    color: var(--color-text-secondary);
+    transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.search-retry:hover,
+.content-retry:hover {
+    color: var(--color-text-primary);
+}
+
+.search-tab {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.search-tab:hover:not(:disabled) {
+    background-color: var(--color-fill);
+    color: var(--color-text-primary);
+}
+
+.search-tab.is-active {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+}
+
+.search-tab.is-active:active {
+    transform: scale(0.97);
+}
+
+/* 歌单页 */
+/* 封面：投影 + 斜向光泽 + 内描边，浮在页面上 */
+.playlist-cover {
+    background-color: var(--color-fill);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12),
+        0 8px 24px rgba(0, 0, 0, 0.08);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.playlist-cover:hover {
+    transform: scale(1.03);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14),
+        0 12px 28px rgba(0, 0, 0, 0.08);
+}
+
+.playlist-cover::before,
+.playlist-cover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.playlist-cover::before {
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.28) 0%,
+        rgba(255, 255, 255, 0.12) 25%,
+        rgba(255, 255, 255, 0.03) 45%,
+        transparent 60%
+    );
+}
+
+.playlist-cover::after {
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.playlist-cover-img {
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+        filter 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.playlist-cover:hover .playlist-cover-img {
+    transform: scale(1.05);
+    filter: brightness(1.04) saturate(1.08);
+}
+
+.playlist-desc {
+    color: var(--color-text-tertiary);
+}
+
+.playlist-meta {
+    color: var(--color-text-tertiary);
+}
+
+.content-list-wrap.is-drop-active {
+    outline-color: var(--color-primary);
+    background-color: rgba(var(--color-primary-rgb), 0.04);
+}
+
+.playlist-edit-btn {
+    background-color: transparent;
+    color: var(--color-text-tertiary);
+    transition: opacity 0.2s ease, background-color 0.15s ease, color 0.15s ease,
+        transform 0.15s ease;
+}
+
+.playlist-edit-btn:hover {
+    background-color: var(--color-fill);
+    color: var(--color-text-primary);
+}
+
+.playlist-edit-label {
+    color: var(--color-text-secondary);
+}
+
+.playlist-edit-input,
+.playlist-edit-textarea {
+    border-color: var(--color-divider);
+    background-color: var(--color-fill);
+    color: var(--color-text-primary);
+}
+
+.playlist-edit-input::placeholder,
+.playlist-edit-textarea::placeholder {
+    color: var(--color-text-placeholder);
+}
+
+.playlist-edit-input:focus,
+.playlist-edit-textarea:focus {
+    border-color: var(--color-primary);
+}
+
+.playlist-edit-cover {
+    border-color: var(--color-divider);
+    background-color: var(--color-fill);
+    color: var(--color-text-tertiary);
+}
+
+.playlist-edit-cover:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.playlist-edit-cover-remove {
+    background-color: transparent;
+    color: var(--color-text-tertiary);
+}
+
+.playlist-edit-cover-remove:hover {
+    color: var(--color-danger);
+}
+
+.playlist-edit-save {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+}
+
+.playlist-edit-save:hover:not(:disabled) {
+    background-color: rgba(var(--color-primary-rgb), 0.85);
+}
+
+/* 本地与下载页 */
+.local-download-del-text {
+    color: var(--color-text-secondary);
+}
+
+.local-download-del-check-text {
+    color: var(--color-text-primary);
+}
+
+.local-download-missing-path {
+    color: var(--color-text-tertiary);
+}
+
+/* 本地与下载页：三个 Tab */
+.ld-tabs {
+    border-bottom-color: var(--color-divider);
+}
+
+.ld-tabs__item {
+    color: var(--color-text-secondary);
+    transition: color 0.18s ease;
+}
+
+.ld-tabs__item:hover:not(.ld-tabs__item--active) {
+    color: var(--color-text-primary);
+}
+
+.ld-tabs__item--active {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+/* 底部 2px 主色激活线 */
+.ld-tabs__item::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 2px;
+    background-color: var(--color-primary);
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.18s ease;
+}
+
+.ld-tabs__item--active::after {
+    transform: scaleX(1);
+}
+
+.ld-add-menu-item {
+    background-color: var(--color-surface);
+    color: var(--color-text-secondary);
+    border-color: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.ld-add-menu-item:hover {
+    background-color: var(--color-fill);
+    color: var(--color-text-primary);
+}
+
+/* 下载记录 */
+.dl-tool-btn {
+    border-color: var(--color-divider);
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    transition: background-color 0.18s ease, color 0.18s ease, transform 0.15s ease;
+}
+
+.dl-tool-btn:hover:not(:disabled) {
+    background-color: var(--color-fill);
+    color: var(--color-text-primary);
+}
+
+.dl-tool-btn--danger {
+    border-color: rgba(var(--color-danger-rgb), 0.4);
+    color: var(--color-danger);
+}
+
+.dl-tool-btn--danger:hover:not(:disabled) {
+    background-color: rgba(var(--color-danger-rgb), 0.1);
+    color: var(--color-danger);
+}
+
+.dl-item {
+    transition: background-color 0.15s ease;
+}
+
+.dl-item:hover {
+    background-color: var(--color-fill);
+}
+
+.dl-item__quality {
+    border-color: var(--color-divider);
+    background-color: var(--color-fill);
+    color: var(--color-text-secondary);
+}
+
+.dl-item__name {
+    color: var(--color-text-primary);
+}
+
+.dl-item__meta,
+.dl-item__singer,
+.dl-item__size {
+    color: var(--color-text-tertiary);
+}
+
+.dl-item__progress-bar {
+    background-color: var(--color-divider);
+}
+
+.dl-item__progress-fill {
+    background-color: var(--color-primary);
+}
+
+.dl-item__speed {
+    color: var(--color-text-tertiary);
+}
+
+.dl-status {
+    color: var(--color-text-secondary);
+}
+
+.dl-status--waiting {
+    color: var(--color-text-tertiary);
+}
+
+.dl-status--downloading {
+    color: var(--color-primary);
+}
+
+.dl-status--paused {
+    color: var(--color-text-secondary);
+}
+
+.dl-status--failed {
+    color: var(--color-danger);
+}
+
+.dl-status--completed {
+    color: var(--color-text-tertiary);
+}
+
+.dl-item__error {
+    color: var(--color-danger);
+    opacity: 0.85;
+}
+
+.dl-item__action {
+    background-color: transparent;
+    color: var(--color-text-tertiary);
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.dl-item__action:hover {
+    background-color: var(--color-fill);
+    color: var(--color-text-primary);
+}
+
+.dl-item__action--danger:hover {
+    color: var(--color-danger);
+}
+
+.dl-clear-text {
+    color: var(--color-text-secondary);
+}
+
+/* 扫描目录导入 */
+.scan-config__label {
+    color: var(--color-text-secondary);
+}
+
+.scan-config__input {
+    border-color: var(--color-divider);
+    background-color: var(--color-fill);
+    color: var(--color-text-primary);
+}
+
+.scan-config__input::placeholder {
+    color: var(--color-text-placeholder);
+}
+
+.scan-config__input:focus {
+    border-color: var(--color-primary);
+}
+
+.scan-config__btn {
+    border-color: var(--color-divider);
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease,
+        transform 0.15s ease;
+}
+
+.scan-config__btn:hover:not(:disabled) {
+    background-color: var(--color-fill);
+    color: var(--color-text-primary);
+}
+
+.scan-config__btn--primary {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+}
+
+.scan-config__btn--primary:hover:not(:disabled) {
+    background-color: rgba(var(--color-primary-rgb), 0.85);
+    border-color: rgba(var(--color-primary-rgb), 0.85);
+}
+
+.scan-config__option {
+    color: var(--color-text-secondary);
+}
+
+.scan-spinner {
+    border-color: rgba(0, 0, 0, 0.12);
+    border-top-color: var(--color-primary);
+}
+
+.scan-loading {
+    color: var(--color-text-secondary);
+}
+
+.scan-loading__progress {
+    color: var(--color-text-tertiary);
+}
+
+.scan-results__count {
+    color: var(--color-text-tertiary);
+}
+
+.scan-result-item {
+    transition: background-color 0.15s ease;
+}
+
+.scan-result-item:hover {
+    background-color: var(--color-fill);
+}
+
+.scan-result-item__meta,
+.scan-result-item__path {
+    color: var(--color-text-tertiary);
+}
+
+.scan-result-item__remove {
+    background-color: transparent;
+    color: var(--color-text-tertiary);
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.scan-result-item__remove:hover {
+    background-color: var(--color-fill);
+    color: var(--color-danger);
+}
+
+/* 播放队列浮层 */
+.queue-panel {
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    border-color: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+}
+
+.queue-header-name {
+    color: var(--color-text-primary);
+}
+
+.queue-header-count,
+.queue-header-hint {
+    color: var(--color-text-tertiary);
+}
+
+.queue-clear {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.queue-clear:hover:not(:disabled) {
+    background-color: rgba(var(--color-primary-rgb), 0.1);
+    color: var(--color-primary);
+}
+
+.queue-empty-icon,
+.queue-empty-hint {
+    color: var(--color-text-tertiary);
+}
+
+.queue-empty-text {
+    color: var(--color-text-secondary);
+}

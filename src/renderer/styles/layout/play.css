@@ -1,0 +1,477 @@
+/* ================================================================
+   播放页浮层：几何 + 固定内置的重件（不是路由，挂在布局根上）
+   ① 浮层自身；② 打开时把下层界面整块藏起来。
+
+   固定在这里：黑胶唱盘整块。仍归主题：`--play-veil` / `--play-bg-blur` 的值、文字色、悬停色。
+   ================================================================ */
+
+.play-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-play);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+}
+
+/* 拖动条要有 z-index：主体是绝对定位的兄弟，不抬高层级会被压住 */
+.play-overlay-bar {
+    position: relative;
+    z-index: 2;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 12px;
+    flex-shrink: 0;
+}
+
+/* 主体铺满整个浮层（背景才到顶）；内容层必须 position:relative 才排在背景之后 */
+.play-view {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.play-bg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+img.play-bg-img {
+    display: block;
+    width: 120%;
+    height: 120%;
+    object-fit: cover;
+    transform: scale(1.2);
+    filter: var(--play-bg-blur, blur(64px) saturate(1.25) brightness(1.08));
+}
+
+/* 罩层：可读性兜底；值由 --play-veil 给，fallback 保证裸主题下也有实色 */
+.play-veil {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-color: var(--play-veil, rgba(255, 255, 255, 0.68));
+}
+
+/* 浮层打开时下层整块熄掉，用 visibility 而不是卸载 */
+.app[data-play-overlay='open'] .titlebar,
+.app[data-play-overlay='open'] .app-body {
+    visibility: hidden;
+}
+
+.play-body {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    padding-top: 44px; /* 给顶部拖动条让位 */
+}
+
+/* 必须 justify-content:center：用「盘 flex:1 吃剩余」会在盘与容器A 之间撑出大缝 */
+.play-left {
+    width: 43%;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 8px 24px 12px;
+}
+
+/* 右栏：歌词外层（上下间距归这层；进滚动容器会被内容滑过） */
+.play-lyric-col {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    padding: 32px 8px 60px 0;
+}
+
+/* 盘必须是「塞得进可用宽高的正方形」（cqmin 取容器宽高较小者）。
+   ⚠️ 80% 放在容器上、盘取满（100cqmin）——「容器 100% + 盘 80%」会露死空间。
+   aspect-ratio 给容器确定高度（否则 cqmin 退化为 0）；flex:0 1 auto 允许窄窗压缩。 */
+.play-disc-wrap {
+    flex: 0 1 auto;
+    width: 80%;
+    aspect-ratio: 1;
+    min-height: 0;
+    container-type: size;
+    display: grid;
+    place-items: center;
+}
+
+/* 盘与高光叠在同一网格单元；拆两层的目的是高光不跟着盘转（光源固定）。
+   盘的大小改 .play-disc-wrap 的 width，盘变了必须同步改主题侧的 blur（绝对像素）。 */
+.play-disc,
+.play-disc-sheen {
+    grid-area: 1 / 1;
+    width: 100cqmin;
+    max-width: 100%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+}
+
+.play-disc {
+    position: relative;
+}
+
+.play-disc-sheen {
+    pointer-events: none;
+}
+
+/* 内环混色层：铺满整盘（哪一段可见由主题侧遮罩决定）；必须在 .play-disc 里，跟着盘转 */
+.play-disc-tint {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+/* ⚠️ 图片盒必须与封面圆窗同框，cover 取景才与圆窗逐像素一致（scale 放大后是「封面长出去」的延续）。
+   ⚠️ 不能只写 inset: 24% —— <img> 是替换元素，width:auto 时用的是图片固有尺寸，必须显式写 52%。 */
+.play-disc-tint-img {
+    position: absolute;
+    top: 24%;
+    left: 24%;
+    width: 52%;
+    height: 52%;
+    object-fit: cover;
+    /* 从圆窗长到 ≥ 遮罩终点：66% 盘半径收掉，2.6 × 圆窗半径(26%) = 67.6% */
+    transform: scale(2.6);
+}
+
+/* 中心圆窗：盘径 52%（四边内缩 24%） */
+.play-disc-cover {
+    position: absolute;
+    inset: 24%;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+/* display 只写在 img 上，别盖掉占位 span 的居中 */
+.play-disc-cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+img.play-disc-cover-img {
+    display: block;
+}
+
+/* 黑胶盘（固定内置）：圆窗 → 细黑环 → 划痕带 → 盘缘；盘底只留纯色 */
+.play-disc {
+    background-color: #101010;
+    box-shadow:
+        0 6px 18px rgba(0, 0, 0, 0.14),
+        inset 0 0 48px rgba(0, 0, 0, 0.55);
+}
+
+/* 划痕 = 烘焙纹理图，不是渐变（渐变没有随机原语，调不出真实感）。
+   由 scripts/gen-vinyl-texture.cjs 生成，调参改脚本 CONFIG；必须画在 ::after 才压得住混色图。 */
+.play-disc::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background-image: url('../assets/vinyl-scratch.png');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    mix-blend-mode: screen;
+    opacity: 0.65;
+    pointer-events: none;
+}
+
+/* 封面外的细黑环（参考图按比例折中取 7px） */
+.play-disc-cover {
+    box-shadow: 0 0 0 7px #0b0b0b, inset 0 0 18px rgba(0, 0, 0, 0.35);
+}
+
+/* 封面色调只延续一小段（52%→66%，出圆窗不到一圈）；closest-side 下 100% = 盘半径 */
+.play-disc-tint-img {
+    -webkit-mask-image: radial-gradient(circle closest-side at 50% 50%,
+        #000 0 56%, rgba(0, 0, 0, 0.35) 62%, rgba(0, 0, 0, 0) 66%);
+    mask-image: radial-gradient(circle closest-side at 50% 50%,
+        #000 0 56%, rgba(0, 0, 0, 0.35) 62%, rgba(0, 0, 0, 0) 66%);
+    /* 绝对像素且不随盘径缩放：改盘尺寸必须同步改（5px ≈ 盘径 4%） */
+    filter: blur(5px) brightness(0.9);
+    opacity: 0.5;
+}
+
+/* 盘面高光：一道 140deg 的宽带（右上 → 左下，约 40° 角），screen 只提亮不遮盖。
+   刻意不随盘转（光源固定）；峰值 0.20 是出图定的（0.30 太抢、0.14 看不见）。 */
+.play-disc-sheen {
+    background-image: linear-gradient(
+        140deg,
+        rgba(255, 255, 255, 0) 34%,
+        rgba(255, 255, 255, 0.05) 44%,
+        rgba(255, 255, 255, 0.20) 50%,
+        rgba(255, 255, 255, 0.05) 56%,
+        rgba(255, 255, 255, 0) 66%
+    );
+    mix-blend-mode: screen;
+}
+
+/* 播放时 20s/圈（真实 33⅓ rpm 太快）；播放态由 `.play-view.is-playing` 传入 */
+@keyframes play-disc-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.play-disc {
+    animation: play-disc-spin 20s linear infinite;
+    animation-play-state: paused;
+}
+
+.play-view.is-playing .play-disc {
+    animation-play-state: running;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .play-disc {
+        animation: none;
+    }
+}
+
+/* 容器A / 进度 / 容器B 三块都取 80%：与唱盘同宽、同一条竖线，铺满左栏会散开 */
+.play-meta {
+    flex-shrink: 0;
+    width: 80%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.play-meta-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.play-name {
+    font-size: 22px;
+    line-height: 1.25;
+}
+
+.play-sub {
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.play-timeline {
+    flex-shrink: 0;
+    width: 80%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.play-time {
+    width: 40px;
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.play-progress {
+    flex: 1;
+    min-width: 0;
+}
+
+/* 中间那组靠自己的 flex:1 居中，所以容器不能 justify-content:center */
+.play-controls {
+    flex-shrink: 0;
+    width: 80%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.play-controls-center {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* 热区含外圈环；环与图标都 pointer-events:none，否则落在环上时事件目标是子元素、算角度的中心就错 */
+.play-vol {
+    position: relative;
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    touch-action: none;
+}
+
+/* 常隐，悬停/拖拽淡入；不能 display:none（热区会消失）。过渡只写这一处 */
+.play-vol-visual {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0.88);
+    transition:
+        opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+        transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.play-vol:hover .play-vol-visual,
+.play-vol.is-dragging .play-vol-visual {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* 圆环：conic-gradient + 径向遮罩挖空中心（结构固定为内置：主题不该手搓 conic + 遮罩）。
+   角度全部来自组件写入的 --vol-offset / --vol-sweep / --vol（与 VolumeKnob 同源）。
+   颜色只引 --color-primary 与主题给的 --play-vol-track。 */
+.play-vol-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    pointer-events: none;
+    background-image: conic-gradient(
+        from var(--vol-offset),
+        var(--color-primary) 0deg calc(var(--vol) * var(--vol-sweep)),
+        var(--play-vol-track, rgba(0, 0, 0, 0.10)) calc(var(--vol) * var(--vol-sweep)) var(--vol-sweep),
+        transparent var(--vol-sweep) 360deg
+    );
+    -webkit-mask-image: radial-gradient(circle closest-side, transparent 0 66%, #000 68%);
+    mask-image: radial-gradient(circle closest-side, transparent 0 66%, #000 68%);
+}
+
+/* 指示点：整层旋转到「起始角 + vol × 扫掠角」，点固定在层顶 ⇒ 落在当前角度上（角度同源） */
+.play-vol-handle {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    pointer-events: none;
+    transform: rotate(calc(var(--vol-offset) + var(--vol) * var(--vol-sweep)));
+}
+
+.play-vol-handle::after {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    margin-left: -3px;
+    border-radius: 50%;
+}
+
+.play-vol-icon {
+    position: relative;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.play-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.play-button:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.play-button:disabled {
+    cursor: not-allowed;
+}
+
+.play-button--play {
+    width: 40px;
+    height: 40px;
+}
+
+/* 必须 position:relative：自动居中锚点用「行.offsetTop - 容器高×30%」，不定位会混进浮层顶部 44px。
+   只负责左右内缩：上下间距归 .play-lyric-col（滚动容器的 padding 会被滑过）。 */
+.play-lyric {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    padding: 0 40px 0 32px;
+}
+
+.play-lyric::-webkit-scrollbar {
+    display: none;
+}
+
+.play-lyric--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+/* 上下留白让首行/末行也能停到 30% 锚点 */
+.play-lyric-spacer--top {
+    height: 20%;
+}
+
+.play-lyric-spacer--bottom {
+    height: 50%;
+}
+
+/* 层级 = 与当前行距离（data-d 钳到 3）：用 scale 不用 font-size（后者回流、锚点会抖） */
+.play-lyric-line {
+    padding: 9px 14px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 18px;
+    line-height: 1.6;
+    transform-origin: left center;
+    /* 整条 transition 只能写一层：主题侧再写会把这条整条替换掉 */
+    transition: transform 0.35s ease-out;
+}
+
+.play-lyric-line[data-d='2'],
+.play-lyric-line[data-d='3'] {
+    transform: scale(0.88);
+}
+
+.play-lyric-line[data-d='1'] {
+    transform: scale(1);
+}
+
+.play-lyric-line[data-d='0'] {
+    transform: scale(1.32);
+}
+
+.play-lyric-translation {
+    margin: 4px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+}

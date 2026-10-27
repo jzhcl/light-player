@@ -1,0 +1,92 @@
+﻿/* ================================================================
+   深色主题 · 设置页骨架与共享件
+   ================================================================ */
+
+.settings-nav-item {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+}
+
+.settings-nav-item:hover:not(.is-active) {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-primary);
+}
+
+/* 选中：普通底色 + 主色文字 */
+.settings-nav-item.is-active {
+    background-color: var(--color-surface-raised);
+    color: var(--color-primary);
+}
+
+.settings-nav-divider {
+    background-color: var(--color-divider);
+}
+
+/* 分组卡片：比画布亮一级的底色 + 阴影，无边框 */
+.settings-group {
+    border-color: transparent;
+    background-color: var(--color-surface);
+    box-shadow: var(--shadow-card);
+}
+
+.settings-group-header {
+    border-bottom-color: var(--color-divider);
+}
+
+.settings-group-title {
+    color: var(--color-text-primary);
+}
+
+.settings-item {
+    border-bottom-color: var(--color-divider);
+}
+
+.settings-item-name {
+    color: var(--color-text-primary);
+}
+
+.settings-item-hint {
+    color: var(--color-text-tertiary);
+}
+
+/* 共享按钮：纯底色按钮，无边框 */
+.settings-btn {
+    color: var(--color-text-primary);
+    border-color: transparent;
+    background-color: var(--color-surface-raised);
+    transition: background-color 0.15s ease;
+}
+
+.settings-btn:hover:not(:disabled) {
+    background-color: var(--color-surface-raised-hover);
+}
+
+.settings-btn:disabled {
+    opacity: 0.5;
+}
+
+.settings-btn--danger {
+    color: var(--color-danger);
+    border-color: var(--color-danger);
+    background-color: transparent;
+}
+
+.settings-btn--danger:hover:not(:disabled) {
+    background-color: rgba(var(--color-danger-rgb), 0.08);
+}
+
+/* 输入框：纯底色，聚焦时用 1px 主色环 */
+.settings-input {
+    border-color: transparent;
+    background-color: var(--color-surface-raised);
+    color: var(--color-text-primary);
+    transition: box-shadow 0.15s ease;
+}
+
+.settings-input::placeholder {
+    color: var(--color-text-placeholder);
+}
+
+.settings-input:focus {
+    box-shadow: 0 0 0 1px var(--color-primary);
+}

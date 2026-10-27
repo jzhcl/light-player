@@ -1,0 +1,120 @@
+@import "reset.css";
+
+/* ===== 浮层层级刻度 =====
+   所有 Portal 到 body 的浮层都落在 body 的同一个层叠上下文里比大小，
+   顺序依据交互语义由低到高：气泡 < 模态（阻断式，须盖住气泡）< 消息（须穿透模态可见）< 提示（最短暂，永不被遮）
+   --z-play 是页面级浮层（播放页），压在应用骨架之上、但在所有气泡/模态之下：
+   它铺满整屏，却仍然要让右键菜单、确认框、消息提示盖在它上面。 */
+:root {
+    --z-play: 500;
+    --z-popover: 1000;
+    --z-modal-mask: 1050;
+    --z-modal: 1051;
+    --z-message: 1100;
+    --z-tooltip: 1150;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html, body, #root {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* 关闭界面动效：全局禁用过渡与动画（等价于强制 reduced-motion）。
+   由 App.tsx 在 appearance.motion.enabled=false 时给 <html> 加 .motion-reduced。 */
+.motion-reduced *,
+.motion-reduced *::before,
+.motion-reduced *::after {
+    transition-duration: 0.001ms !important;
+    transition-delay: 0ms !important;
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", "WenQuanYi Zen Hei",
+    "Noto Sans CJK TC", "Hiragino Sans GB", Arial, sans-serif;
+}
+
+.flex-h {
+    display: flex;
+}
+
+.flex-v {
+    display: flex;
+    flex-direction: column;
+}
+
+.h-center {
+    display: flex;
+    align-items: center;
+}
+
+.v-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.disabled {
+    opacity: 0.6;
+}
+
+.ellipsis {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+}
+
+/* 仅供屏幕阅读器：视觉上隐藏但仍可被辅助技术读取（Modal 的无可见标题场景） */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.overlay {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    inset: 0;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none; /* IE 和 Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.draggable {
+    -webkit-app-region: drag;
+}
+
+.no-draggable {
+    -webkit-app-region: no-drag;
+}

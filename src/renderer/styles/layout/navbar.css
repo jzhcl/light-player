@@ -1,0 +1,312 @@
+/* ================================================================
+   侧边导航几何（navbar，展开 180 / 收起 60）
+   只写尺寸、间距、圆角、字号、光标、溢出、几何过渡；颜色见 themes/light/navbar.css。
+   滚动区（wrap / 视口 / 滑块的共同几何）在 layout/components.css，这里只留场景差异。
+   ================================================================ */
+
+.navbar {
+    flex-shrink: 0;
+    width: 60px;
+    overflow: hidden;
+    padding: 8px 0;
+    transition: width 0.2s ease;
+    /* 歌单标题的布局高度，须与 .navbar-scroll-wrap 的偏移量保持一致 */
+    --navbar-section-header-h: 40px;
+}
+
+.navbar[data-expanded='true'] {
+    width: 180px;
+}
+
+/* 焦点环画在盒子内侧：滚动视口会裁掉后代画在盒外的部分，歌单首项的环顶边会整条消失。 */
+.navbar :is(a, button, input):focus-visible {
+    outline-offset: -2px;
+}
+
+/* 内层跟随 navbar 实际宽度（60/180）。内容钉死在 180 再裁切的话，
+   收起态下歌单项的背景/圆角/间距都是错的。 */
+.navbar-inner {
+    flex: 1;
+    min-height: 0;
+}
+
+/* 收起时用 transform 上移盖住标题区：走合成器、不触发 layout，滚动视口高度恒定。 */
+.navbar-scroll-wrap {
+    flex: 1;
+    min-height: 0;
+    transition: transform 0.2s ease;
+}
+
+/* 固定顶部区：固定导航 + 歌单标题，置于滚动区之外。标题高度两态恒定（仅淡出），
+   否则滚动到底部切换时会因 scrollHeight 逐帧变化而重排。 */
+.navbar-fixed {
+    flex-shrink: 0;
+    padding: 0 8px;
+}
+
+.navbar-scroll {
+    width: 100%;
+    height: 100%;
+    padding: 0 8px;
+    /* 不与浏览器争夺 scrollTop，避免过渡期抖动 */
+    overflow-anchor: none;
+}
+
+.navbar-group {
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.navbar-item {
+    position: relative; /* 文字与下载进度条的定位上下文 */
+    gap: 12px;
+    height: 40px;
+    padding: 0 10px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    text-decoration: none;
+}
+
+/* 收起态图标保持左对齐、位置恒定，避免窗窄时被推出可见区 */
+.navbar-item-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    /* 换用封面图时圆角要能裁到图片四角 */
+    overflow: hidden;
+}
+
+.navbar-item-cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 文字绝对定位：脱离文档流，宽度过渡期间不重排；收起态被裁掉、展开态淡入。 */
+.navbar-item-text {
+    position: absolute;
+    left: 46px;
+    right: 8px;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.navbar[data-expanded='true'] .navbar-item-text {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.navbar-divider {
+    height: 1px;
+    margin: 8px 4px;
+    flex-shrink: 0;
+}
+
+.navbar-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: var(--navbar-section-header-h);
+    padding: 0 12px;
+    flex-shrink: 0;
+    overflow: hidden;
+    transition: opacity 0.2s ease;
+}
+
+/* 收起态：仅淡出 + 移出 Tab 序列，高度保持不变 */
+.navbar[data-expanded='false'] .navbar-section-header {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+}
+
+/* 收起时滚动区上移一个标题高度，把已淡出的标题区「填」掉 */
+.navbar[data-expanded='false'] .navbar-scroll-wrap {
+    transform: translateY(calc(-1 * var(--navbar-section-header-h)));
+}
+
+.navbar-section-title {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.navbar-add-playlist.icon-button {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.navbar-footer {
+    gap: 8px;
+    padding: 8px;
+    flex-shrink: 0;
+}
+
+.navbar-footer .navbar-item {
+    flex: 1;
+}
+
+/* 收起态隐藏设置项，仅留展开按钮 */
+.navbar[data-expanded='false'] .navbar-footer .navbar-item {
+    display: none;
+}
+
+.navbar-toggle {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+}
+
+/* 展开态图标逆时针转 180°；过渡只在状态切换后启用，首帧不播动画 */
+.navbar-toggle-icon {
+    width: 100%;
+    height: 100%;
+}
+
+.navbar-toggle--animate .navbar-toggle-icon {
+    transition: transform 0.2s ease;
+}
+
+.navbar-toggle--expanded .navbar-toggle-icon {
+    transform: rotate(-180deg);
+}
+
+/* 展开按钮 + 收起态快捷操作的定位上下文 */
+.navbar-toggle-area {
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* 收起态快捷操作：默认藏在 toggle 上方，悬停时旋转淡入；展开态由 CSS 移除，
+   避免与 footer 设置项视觉重复。 */
+.navbar-quick-actions {
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transform-origin: center bottom;
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.3);
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.navbar[data-expanded='true'] .navbar-quick-actions {
+    display: none;
+}
+
+.navbar-quick-actions--visible {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+    pointer-events: auto;
+}
+
+.navbar-quick-action-item {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+/* 行内重命名输入框 */
+.navbar-edit-input {
+    flex: 1;
+    min-width: 0;
+    height: 24px;
+    padding: 0 6px;
+    font-size: 13px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 4px;
+    outline: none;
+    background: transparent;
+}
+
+/* 编辑仅在展开态发生，收起态移出 Tab 序列 */
+.navbar[data-expanded='false'] .navbar-edit-input {
+    display: none;
+}
+
+/* 删除按钮：默认隐藏，悬停导航项时显示；确认态（is-open）常显以作 Popover 锚点 */
+.navbar-delete-button {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.navbar-item:hover .navbar-delete-button,
+.navbar-delete-button:focus-within,
+.navbar-delete-button.is-open {
+    opacity: 1;
+}
+
+/* 收起态彻底移除，避免 Tab 聚焦到隐藏按钮、触发容器偏移卡死 */
+.navbar[data-expanded='false'] .navbar-delete-button {
+    display: none;
+}
+
+.navbar-item.is-dragging {
+    cursor: grabbing;
+}
+
+/* 下载进行中：导航项底部不确定进度条 */
+.navbar-download-bar {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 2px;
+    height: 2px;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.navbar-download-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 40%;
+    border-radius: 2px;
+    animation: navbar-download-indeterminate 1.1s ease-in-out infinite;
+}
+
+@keyframes navbar-download-indeterminate {
+    0%   { left: -40%; }
+    50%  { left: 50%; }
+    100% { left: 100%; }
+}

@@ -1,0 +1,41 @@
+/* ================================================================
+   逐字歌词的单个词 —— 主窗播放页与桌面歌词窗共用。
+   两层重叠文本：底层常态、上层高亮色，组件每帧只推上层的 clip-path 右边界。
+   颜色不在这里 —— 各场景自己的样式按容器前缀给（.play-lyric / .lyric-window）。
+   ================================================================ */
+
+/* ── 滑动层（仅桌面歌词窗的逐字行） ────────────────────────────────
+   视口是外层的 `.lyric-line`（nowrap + overflow:hidden），本层装整行、只负责自己的
+   宽与位移，由组件按「让当前词居中」算出来。
+
+   `display: block` + `width: max-content` 是为了一件事：基准左边缘恒等于视口左内边缘。
+   块级盒不吃继承来的 `text-align: center`，也不像 `justify-content: center` 那样在溢出时
+   把两端一起裁掉 —— 位移的零点因此是确定的，不需要去减一个「居中造成的偏移量」。
+   不溢出时不写位移，位置由外层对齐（居中 / 左右分离）决定，与本层无关。 */
+.karaoke-track {
+    /* 作为词 offsetLeft / offsetWidth 的量算基准；尺寸变化只由 ResizeObserver 触发重量 */
+    position: relative;
+    display: block;
+    width: max-content;
+    text-align: left;
+    will-change: transform;
+}
+
+.karaoke-word {
+    position: relative;
+    display: inline-block;
+    vertical-align: baseline;
+    white-space: pre-wrap;
+}
+
+.karaoke-word-highlight {
+    position: absolute;
+    left: 0;
+    top: 0;
+    line-height: inherit;
+    white-space: nowrap;
+    pointer-events: none;
+    /* 初始整层裁掉，随后由组件的 rAF 逐帧揭开。 */
+    clip-path: inset(0 100% 0 0);
+    will-change: clip-path;
+}

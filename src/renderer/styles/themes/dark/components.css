@@ -1,0 +1,281 @@
+﻿/* ================================================================
+   深色主题 · 通用组件
+   ================================================================ */
+
+.icon--mask {
+    background-color: currentColor;
+}
+
+.cover-placeholder {
+    color: var(--color-text-tertiary);
+}
+
+.icon-button {
+    background-color: transparent;
+    color: var(--color-text-tertiary);
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.icon-button:hover:not(.disabled) {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: var(--color-primary);
+}
+
+.icon-button--sm:disabled {
+    opacity: 0.35;
+}
+
+.icon-button--danger:hover:not(.disabled) {
+    background-color: rgba(var(--color-danger-rgb), 0.14);
+    color: var(--color-danger);
+}
+
+.wave-bar {
+    background-color: var(--color-primary);
+}
+
+.scroll-area-thumb {
+    background-color: rgba(255, 255, 255, 0.16);
+    transition: opacity 0.3s ease;
+}
+
+.scroll-area-thumb.is-visible {
+    background-color: rgba(255, 255, 255, 0.28);
+}
+
+.slider-track {
+    background-color: rgba(255, 255, 255, 0.10);
+}
+
+.slider-range {
+    background-color: var(--color-primary);
+}
+
+.slider-thumb {
+    background-color: var(--color-primary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.40);
+}
+
+.slider--auto-hide .slider-thumb {
+    transition: opacity 0.3s ease;
+}
+
+.slider[data-disabled] {
+    opacity: 0.7;
+}
+
+.checkbox {
+    border-color: transparent;
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.checkbox[data-state='checked'] {
+    border-color: transparent;
+    background-color: var(--color-brand);
+    color: var(--color-on-brand);
+}
+
+.checkbox:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* 下拉选择器：抬升一级的纯色表面 */
+.select-trigger {
+    border-color: transparent;
+    background-color: var(--color-surface-raised);
+    color: var(--color-text-primary);
+    transition: background-color 0.15s ease;
+}
+
+.select-trigger:hover {
+    background-color: var(--color-surface-raised-hover);
+}
+
+.select-trigger[data-state='open'] {
+    background-color: var(--color-surface-float);
+}
+
+.select-caret {
+    color: var(--color-text-tertiary);
+}
+
+.select-content {
+    background-color: var(--color-surface-float);
+    border-color: transparent;
+    box-shadow: var(--shadow-float);
+}
+
+.select-option {
+    color: var(--color-text-primary);
+}
+
+.select-option[data-highlighted] {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.select-option[data-state='checked'] {
+    color: var(--color-text-primary);
+}
+
+.select-item-indicator {
+    color: var(--color-primary);
+}
+
+/* 浮层：浮层级底色 + 阴影，无边框 */
+.popover-inner {
+    background-color: var(--color-surface-float);
+    color: var(--color-text-primary);
+    border-color: transparent;
+    box-shadow: var(--shadow-float);
+}
+
+/* 透明浮层：载体由使用处自行绘制 */
+.popover--bare > .popover-inner {
+    background-color: transparent;
+    box-shadow: none;
+}
+
+.popover-arrow {
+    fill: var(--color-surface-float);
+}
+
+.popover-confirm-text {
+    color: var(--color-text-primary);
+}
+
+.popover-confirm-cancel {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: var(--color-text-primary);
+}
+
+.popover-confirm-cancel:hover {
+    background-color: rgba(255, 255, 255, 0.10);
+}
+
+.popover-confirm-ok {
+    background-color: var(--color-brand);
+    color: var(--color-on-brand);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 6px 16px rgba(var(--color-brand-rgb), 0.24);
+}
+
+.popover-confirm-ok:hover {
+    background-color: rgb(244, 26, 102);
+}
+
+/* Message：中性浮层卡片，类型只染底色与图标 */
+.message-item {
+    background-color: var(--color-surface-float);
+    color: var(--color-text-primary);
+    box-shadow: var(--shadow-float);
+}
+
+/* 关闭按钮：默认淡、悬停加深 */
+.message-item-close {
+    color: var(--color-text-tertiary);
+}
+
+.message-item-close:hover {
+    color: var(--color-text-primary);
+}
+
+.message-item--info {
+    background-color: rgb(52, 62, 78);
+}
+
+.message-item--info .message-item-icon {
+    color: rgb(130, 180, 232);
+}
+
+.message-item--success {
+    background-color: rgb(48, 66, 56);
+}
+
+.message-item--success .message-item-icon {
+    color: rgb(120, 199, 149);
+}
+
+.message-item--warn {
+    background-color: rgb(70, 60, 46);
+}
+
+.message-item--warn .message-item-icon {
+    color: rgb(217, 168, 98);
+}
+
+.message-item--error {
+    background-color: rgb(70, 50, 50);
+}
+
+.message-item--error .message-item-icon {
+    color: rgb(var(--color-danger-rgb));
+}
+
+.modal-mask {
+    background-color: rgba(0, 0, 0, 0.60);
+}
+
+/* 外壳：对话框用浮层底色 + 阴影；插件面板保持透明 */
+:is(.modal--dialog, .modal--plugin-view).modal-container {
+    box-shadow: var(--shadow-float);
+}
+
+.modal--dialog.modal-container {
+    background-color: var(--color-surface-float);
+}
+
+.modal-title {
+    border-bottom-color: var(--color-divider);
+}
+
+.modal-footer {
+    border-top-color: var(--color-divider);
+}
+
+/* 「当前版本」标记：跟主色走 */
+.update-changelog-current {
+    color: var(--color-primary);
+    background-color: rgba(var(--color-primary-rgb), 0.16);
+    border-color: rgba(var(--color-primary-rgb), 0.40);
+}
+
+.tippy-content {
+    background-color: var(--color-surface-float);
+    color: var(--color-text-primary);
+    border-color: transparent;
+    box-shadow: var(--shadow-card);
+}
+
+.context-menu {
+    background-color: var(--color-surface-float);
+    border-color: transparent;
+    box-shadow: var(--shadow-float);
+}
+
+.context-menu-item {
+    color: var(--color-text-primary);
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.context-menu-item[data-highlighted] {
+    background-color: rgba(var(--color-primary-rgb), 0.14);
+    color: var(--color-text-primary);
+}
+
+.context-menu-item.is-danger {
+    color: var(--color-danger);
+}
+
+.context-menu-item.is-danger[data-highlighted] {
+    background-color: rgba(var(--color-danger-rgb), 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .context-menu-item {
+        transition: none;
+    }
+}
+
+.context-menu-separator {
+    background-color: var(--color-divider);
+}

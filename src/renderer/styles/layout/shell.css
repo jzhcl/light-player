@@ -1,0 +1,28 @@
+/* ================================================================
+   骨架几何
+   只写尺寸、间距、圆角、字号、光标、溢出、几何过渡；颜色见 themes/light/shell.css
+   ================================================================ */
+
+/* ===== 四区骨架 ===== */
+.app {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    user-select: none;
+}
+
+.app-body {
+    flex: 1;
+    min-height: 0;
+}
+
+.app-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.content {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}

@@ -1,0 +1,250 @@
+/* ================================================================
+   标题栏几何（titlebar，50px）
+   只写尺寸、间距、形状、光标、溢出、几何过渡；颜色见 themes/light/titlebar.css。
+   ================================================================ */
+
+.titlebar {
+    position: relative; /* 绝对定位的 .titlebar-center 的包含块 */
+    height: 50px;
+    flex-shrink: 0;
+    gap: 8px;
+    padding: 0 8px;
+}
+
+/* 压在绝对定位的 center 之上：窄窗时中间再宽也盖不住两边按钮；
+   center 出流后一行不再有「被挤开」的力，右侧自己 margin-left: auto 推到右端。 */
+.titlebar-left,
+.titlebar-right {
+    position: relative;
+    z-index: 2;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.titlebar-right {
+    margin-left: auto;
+}
+
+.titlebar-left {
+    padding-left: 10.5px;
+}
+
+.titlebar-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 360px;
+}
+
+.titlebar-logo {
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+    flex-shrink: 0;
+    border-radius: 50%;
+}
+
+.titlebar-history {
+    gap: 2px;
+}
+
+/* ===== 当前歌曲状态（appearance.titlebar.showSongStatus）=====
+   与搜索框共占中央一格：搜索框空闲时淡入、被唤回时淡出。
+   pointer-events: none 是为了让悬停命中永远落在中央容器上。 */
+.titlebar-songstatus {
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 12px;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.titlebar-songstatus.is-concealed {
+    opacity: 0;
+}
+
+/* 音柱条：复用通用件 .wave / .wave-bar（几何与关键帧在 components.css）。
+   用 opacity 不用 display —— 柱槽常驻，隐去时文字不跳位。 */
+.titlebar-songstatus-spectrum {
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.titlebar-songstatus.is-playing .titlebar-songstatus-spectrum {
+    opacity: 1;
+}
+
+/* 未播放时连动画一起停 */
+.titlebar-songstatus:not(.is-playing) .wave-bar {
+    animation-play-state: paused;
+}
+
+.titlebar-songstatus-text {
+    max-width: 240px;
+}
+
+/* ===== 搜索框（SearchBox）===== */
+.searchbox {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 32px;
+    border-radius: 10px;
+    border-width: 1px;
+    border-style: solid;
+    padding: 0 10px;
+    transition: opacity 0.2s ease;
+}
+
+/* 空闲态让位给歌曲状态 */
+.searchbox.is-concealed {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* 文字恒由预览层渲染，input 自身只留光标 */
+.searchbox-input {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: transparent;
+    outline: none;
+    padding: 0;
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    color: transparent;
+    transition: color 0s;
+}
+
+/* left/right 10px 对齐 input 内容区（绝对定位相对父级 padding box） */
+.searchbox-preview {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    pointer-events: none;
+    white-space: pre;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* transform 由组件按 input.scrollLeft 写入 */
+.searchbox-preview-inner {
+    flex-shrink: 0;
+}
+
+/* IME 合成期间把文字渲染交还 input */
+.searchbox.is-composing .searchbox-preview {
+    display: none;
+}
+
+.searchbox-preview-ghost {
+    opacity: 0.55;
+}
+
+/* 高度由组件算成 px 写 inline style */
+.searchbox-panel {
+    position: fixed;
+    border-radius: 12px;
+    border-width: 1px;
+    border-style: solid;
+    overflow: hidden;
+    z-index: var(--z-popover);
+    transform-origin: top center;
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+    transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.searchbox-panel.is-open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .searchbox-panel {
+        transition-duration: 0.01ms !important;
+    }
+}
+
+.searchbox-scroll-wrap {
+    height: 100%;
+}
+
+.searchbox-scroll {
+    width: 100%;
+    height: 100%;
+}
+
+/* 横向内缩 8px：留出滑块沟槽，也让高亮块不贴边 */
+.searchbox-list {
+    padding: 8px;
+}
+
+.searchbox-group {
+    padding: 2px 0;
+}
+
+.searchbox-group + .searchbox-group {
+    border-top-width: 1px;
+    border-top-style: solid;
+    margin-top: 4px;
+    padding-top: 6px;
+}
+
+.searchbox-group-title {
+    display: flex;
+    align-items: center;
+    height: 24px;
+    font-size: 11px;
+    padding: 0 4px;
+    user-select: none;
+}
+
+.searchbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1.4;
+    user-select: none;
+}
+
+.searchbox-item-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.searchbox-item-sub {
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.searchbox-item-source {
+    margin-left: auto;
+    font-size: 11px;
+    flex-shrink: 0;
+    padding-left: 8px;
+}

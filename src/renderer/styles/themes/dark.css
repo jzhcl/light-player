@@ -1,0 +1,63 @@
+/* ================================================================
+   内置深色主题
+   层次由四级底色与阴影承担，品牌色只落在文字与图标上，不做大面积填充。
+   ================================================================ */
+
+@import './dark/titlebar.css';
+@import './dark/navbar.css';
+@import './dark/control.css';
+@import './dark/components.css';
+@import './dark/song-list.css';
+@import './dark/content-page.css';
+@import './dark/settings.css';
+@import './dark/play.css';
+@import './dark/settings-page.css';
+
+:root {
+    color-scheme: dark;
+
+    /* 主色：亮红粉，用于强调文字与图标 */
+    --color-primary: rgb(255, 113, 131);
+    --color-primary-rgb: 255, 113, 131;
+    /* 品牌红：用于关键实心按钮（播放 / 勾选），白色图案 */
+    --color-brand: rgb(230, 0, 83);
+    --color-brand-rgb: 230, 0, 83;
+    --color-on-brand: rgb(255, 255, 255);
+    --color-danger: rgb(255, 92, 92);
+    --color-danger-rgb: 255, 92, 92;
+
+    /* 中性冷白文字 */
+    --color-text-primary: rgba(242, 242, 244, 0.92);
+    --color-text-secondary: rgba(242, 242, 244, 0.62);
+    --color-text-tertiary: rgba(242, 242, 244, 0.40);
+    --color-text-inverse: rgb(12, 12, 14);
+    --color-text-placeholder: rgba(242, 242, 244, 0.28);
+
+    /* 页面比导航 / 标题栏亮；按钮、输入、浮层继续向上 */
+    --color-fill: rgb(34, 34, 39);
+    --color-chrome: rgb(24, 24, 28);
+    --color-surface: rgb(42, 42, 48);
+    --color-surface-raised: rgb(52, 52, 59);
+    --color-surface-float: rgb(62, 62, 70);
+    --color-surface-raised-hover: rgb(60, 60, 68);
+    --color-surface-float-hover: rgb(74, 74, 84);
+
+    --color-divider: rgba(255, 255, 255, 0.07);
+
+    /* 阴影只用于浮层与拖拽态 */
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.28), 0 8px 24px rgba(0, 0, 0, 0.14);
+    --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.42), 0 2px 6px rgba(0, 0, 0, 0.26);
+}
+
+html,
+body {
+    background-color: var(--color-chrome);
+}
+
+body {
+    color: var(--color-text-primary);
+}
+
+#root {
+    background-color: transparent;
+}

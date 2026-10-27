@@ -1,0 +1,95 @@
+/* ================================================================
+   新建主题的兜底样式（fallback）
+   用途：主题没写全时，让「只靠颜色才存在」的元素仍然看得见。
+   红线：只求可见，不求好看。
+
+   三条规则：
+   1) 不定义任何 --color-* 变量 —— 只按组件写具体色值；
+   2) 选择器默认包在 :where() 里（特异性 = 0）：内置主题与自定义主题的规则都压过它，
+      兜底只填空缺，不会盖掉任何已有配色；
+   ⚠️ 例外：要盖掉的是 layout 自己的声明 时（layout 把颜色嵌在 conic/gradient 里，
+      变量缺值 ⇒ 整条属性失效），:where() 拼不过 (0,1,0) ⇒ 直接写组件选择器（.xxx），
+      靠「本文件在主题之后加载」取胜。代价是该主题下这一处固定为兜底色。
+   3) 由主题的 style.css 首行 @import 进来。
+      不想要兜底？删掉那行 @import（本文件可一并删除）。
+
+   不属于这里：一般浮层 / 按钮底色（透明叠在页面上仍然可见）。
+   例外是「缺色即失去状态或可读性」的两处：Modal 遮罩（没有底色就感知不到模态已打开）、
+   Message 卡片（同类内容的对比度不可控，必须自带底色与文字色）。
+   ================================================================ */
+
+/* ===== 一、没有背景色就不存在的元素 ===== */
+
+/* Modal 遮罩：没有底色就感知不到「已打开模态」与蒙层命中区 */
+:where(.modal-mask) {
+    background-color: rgba(0, 0, 0, 0.45);
+}
+
+/* Message 卡片：自带底色与文字色，避免主题只改页面文字色时出现浅底浅字 */
+:where(.message-item) {
+    background-color: rgba(255, 255, 255, 0.96);
+    color: rgba(0, 0, 0, 0.85);
+}
+
+/* 导航栏 / 底栏 / 设置页导航的分割线（没有内容的 div / span / li，形状只由底色给出） */
+:where(.navbar-divider, .control-divider, .settings-nav-divider) {
+    background-color: rgba(0, 0, 0, 0.14);
+}
+
+/* 自定义滚动条滑块：平时 opacity: 0，靠 .is-visible 显形；没有底色等于显形也看不见 */
+:where(.scroll-area-thumb) {
+    background-color: rgba(0, 0, 0, 0.28);
+}
+
+:where(.scroll-area-thumb.is-visible) {
+    background-color: rgba(0, 0, 0, 0.42);
+}
+
+/* 进度 / 音量条（.slider 三件套）：轨道与已播段都是纯色块 */
+:where(.slider-track) {
+    background-color: rgba(0, 0, 0, 0.16);
+}
+
+:where(.slider-range, .slider-thumb) {
+    background-color: #3a3a3a;
+}
+
+/* 播放页音量旋钮的环 */
+.play-vol-ring {
+    background-image: conic-gradient(
+        from var(--vol-offset),
+        #3a3a3a 0deg calc(var(--vol) * var(--vol-sweep)),
+        var(--play-vol-track, rgba(0, 0, 0, 0.10)) calc(var(--vol) * var(--vol-sweep)) var(--vol-sweep),
+        transparent var(--vol-sweep) 360deg
+    );
+}
+
+/* 音量旋钮的指示点 */
+:where(.play-vol-handle)::after {
+    background-color: #fff;
+    box-shadow: 0 0 0 1.5px #3a3a3a;
+}
+
+/* 正在播放的音柱（2px 竖条，标题栏 / 队列 / 歌曲行共用） */
+:where(.wave-bar) {
+    background-color: #3a3a3a;
+}
+
+/* 下载进度条：轨道 + 已下载段 */
+:where(.dl-item__progress-bar) {
+    background-color: rgba(0, 0, 0, 0.16);
+}
+
+:where(.dl-item__progress-fill) {
+    background-color: #3a3a3a;
+}
+
+/* 更新进度条：轨道 + 已下载段 */
+:where(.update-progress) {
+    background-color: rgba(0, 0, 0, 0.16);
+}
+
+:where(.update-progress-bar) {
+    background-color: #3a3a3a;
+}
+

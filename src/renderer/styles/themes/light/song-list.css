@@ -1,0 +1,205 @@
+/* ================================================================
+   浅色主题 · 歌曲列表
+   ================================================================ */
+
+.song-head {
+    border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+.song-head .song-col {
+    color: var(--color-text-tertiary);
+}
+
+.song-row {
+    color: var(--color-text-primary);
+    background-color: transparent;
+    transition: background-color 0.15s ease;
+}
+
+.song-row:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.song-row.is-selected {
+    background-color: rgba(var(--color-primary-rgb), 0.08);
+}
+
+.song-row.is-selected:hover {
+    background-color: rgba(var(--color-primary-rgb), 0.12);
+}
+
+.song-index,
+.song-index-idle {
+    color: var(--color-text-tertiary);
+}
+
+.song-index-paused {
+    color: var(--color-primary);
+}
+
+.song-play-toggle {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.song-play-toggle:hover {
+    background-color: rgba(var(--color-primary-rgb), 0.1);
+    color: var(--color-primary);
+}
+
+.song-badge--local {
+    color: var(--color-primary);
+}
+
+.song-singers-sep,
+.song-singers-link {
+    color: var(--color-text-tertiary);
+}
+
+.song-singers-link {
+    transition: color 0.15s ease;
+}
+
+.song-singers-link:hover {
+    color: var(--color-primary);
+}
+
+.song-cover {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+.song-row:hover .song-name {
+    color: var(--color-primary);
+}
+
+.song-singer,
+.song-album,
+.song-duration {
+    color: var(--color-text-tertiary);
+}
+
+.song-album:hover {
+    color: var(--color-primary);
+}
+
+.song-action {
+    color: var(--color-text-tertiary);
+    transition: color 0.15s ease;
+}
+
+.song-action:hover {
+    color: var(--color-primary);
+}
+
+.song-action.is-active {
+    color: var(--color-danger);
+}
+
+.song-tag--plugin {
+    background-color: #f1efe8;
+    color: #5f5e5a;
+    border: 0.5px solid #d3d1c7;
+}
+
+.song-tag--quality {
+    background-color: transparent;
+    color: var(--color-primary);
+    border-color: rgba(var(--color-primary-rgb), 0.45);
+}
+
+.song-tag--size {
+    background-color: var(--color-fill);
+    color: var(--color-text-tertiary);
+}
+
+.song-tag--dl-quality {
+    background-color: rgba(var(--color-primary-rgb), 0.1);
+    color: var(--color-primary);
+}
+
+.song-tag--missing {
+    background-color: rgba(var(--color-danger-rgb), 0.1);
+    color: var(--color-danger);
+    border-color: rgba(var(--color-danger-rgb), 0.45);
+}
+
+/* 本地文件已丢失的行：删线 */
+.song-rows .list-row.is-missing .song-name,
+.song-rows .list-row.is-missing .song-singer {
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+}
+
+/* 最近播放 */
+.song-played-count {
+    color: var(--color-text-secondary);
+}
+
+.song-last-played {
+    color: var(--color-text-tertiary);
+}
+
+.song-head .is-sortable:hover {
+    color: var(--color-text-primary);
+}
+
+.song-head .sort-indicator {
+    color: var(--color-primary);
+}
+
+/* 队列 */
+.queue-track {
+    background-color: transparent;
+    transition: background-color 0.15s ease;
+}
+
+.queue-track:hover,
+.queue-track:focus-within {
+    background-color: rgba(0, 0, 0, 0.045);
+}
+
+.queue-handle,
+.queue-remove {
+    background-color: transparent;
+    color: var(--color-text-tertiary);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.queue-handle:hover,
+.queue-remove:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+    color: var(--color-text-primary);
+}
+
+.song-row.is-dragging,
+.queue-track.is-dragging {
+    background-color: var(--color-surface);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+    opacity: 0.92;
+}
+
+.queue-index {
+    color: var(--color-text-tertiary);
+}
+
+.queue-name {
+    color: var(--color-text-primary);
+}
+
+.queue-track.is-current .queue-name {
+    color: var(--color-primary);
+}
+
+.queue-singer,
+.queue-duration {
+    color: var(--color-text-tertiary);
+}
+
+/* 歌曲已失效：整行降级为占位色，但仍留在队列里 */
+.queue-track.is-missing .queue-name,
+.queue-track.is-missing .queue-singer,
+.queue-track.is-missing .queue-duration,
+.queue-track.is-missing .queue-index {
+    color: var(--color-text-placeholder);
+}

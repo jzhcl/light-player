@@ -1,0 +1,55 @@
+/* ================================================================
+   浅色主题 · 侧边导航
+   ================================================================ */
+
+.navbar-item {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+}
+
+.navbar-item:hover:not(.navbar-item--active) {
+    background-color: rgba(0, 0, 0, 0.04);
+    color: var(--color-text-primary);
+}
+
+.navbar-item--active {
+    background-color: rgba(var(--color-primary-rgb), 0.1);
+    color: var(--color-primary);
+}
+
+.navbar-divider {
+    background-color: rgba(0, 0, 0, 0.06);
+}
+
+.navbar-section-title {
+    color: var(--color-text-tertiary);
+}
+
+.navbar-toggle,
+.navbar-quick-action-item,
+.navbar-delete-button {
+    background-color: transparent;
+    color: var(--color-text-tertiary);
+}
+
+.navbar-toggle:hover,
+.navbar-quick-action-item:hover,
+.navbar-delete-button:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+    color: var(--color-text-primary);
+}
+
+.navbar-edit-input {
+    border-color: var(--color-primary);
+    color: var(--color-text-primary);
+    background-color: var(--color-fill);
+}
+
+/* 下载进行中：不确定进度条 */
+.navbar-download-bar {
+    background-color: var(--color-divider);
+}
+
+.navbar-download-bar::before {
+    background-color: var(--color-primary);
+}

@@ -1,0 +1,104 @@
+/* ================================================================
+   浅色主题 · 设置页骨架与共享件
+   ================================================================ */
+
+.settings-nav-item {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+}
+
+.settings-nav-item:hover:not(.is-active) {
+    background-color: rgba(0, 0, 0, 0.04);
+    color: var(--color-text-primary);
+}
+
+.settings-nav-item.is-active {
+    background-color: rgba(var(--color-primary-rgb), 0.1);
+    color: var(--color-primary);
+}
+
+/* 激活态左侧色条 */
+.settings-nav-item::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 0;
+    border-radius: 0 2px 2px 0;
+    transition: height 0.2s ease;
+    background: var(--color-primary);
+}
+
+.settings-nav-item.is-active::before {
+    height: 16px;
+}
+
+.settings-nav-divider {
+    background-color: var(--color-divider);
+}
+
+.settings-group {
+    border-color: var(--color-divider);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.settings-group-header {
+    border-bottom-color: var(--color-divider);
+}
+
+.settings-group-title {
+    color: var(--color-text-primary);
+}
+
+.settings-item {
+    border-bottom-color: var(--color-divider);
+}
+
+.settings-item-name {
+    color: var(--color-text-primary);
+}
+
+.settings-item-hint {
+    color: var(--color-text-tertiary);
+}
+
+/* 共享按钮与输入框 */
+.settings-btn {
+    color: var(--color-text-primary);
+    border-color: rgba(0, 0, 0, 0.15);
+    background-color: var(--color-surface);
+}
+
+.settings-btn:hover:not(:disabled) {
+    border-color: rgba(0, 0, 0, 0.28);
+}
+
+.settings-btn:disabled {
+    opacity: 0.5;
+}
+
+.settings-btn--danger {
+    color: var(--color-danger);
+    border-color: rgba(var(--color-danger-rgb), 0.45);
+}
+
+.settings-btn--danger:hover:not(:disabled) {
+    border-color: var(--color-danger);
+    background-color: rgba(var(--color-danger-rgb), 0.08);
+}
+
+.settings-input {
+    border-color: rgba(0, 0, 0, 0.15);
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+}
+
+.settings-input::placeholder {
+    color: var(--color-text-placeholder);
+}
+
+.settings-input:focus {
+    border-color: var(--color-primary);
+}

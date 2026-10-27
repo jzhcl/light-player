@@ -1,0 +1,1084 @@
+/* ================================================================
+   设置页 · 子页布局（7 个子页共用这一份）
+   骨架（导航 / 内容区）与共享分组/项在 layout/settings.css；
+   这里按「常规 → 外观 → 桌面歌词 → 插件 → 下载」排列各子页专属规则。
+   颜色见 themes/light/settings-page.css。
+
+   ================================================================ */
+/* 快捷键：录入栏与「重置」按钮横排 */
+.hotkey-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 快捷键：录入栏 + 内联错误纵向排列 */
+.settings-item-action.hotkey-action-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+.settings-item-error {
+    font-size: 11px;
+    line-height: 1.4;
+    max-width: 200px;
+    text-align: right;
+}
+
+/* 常规页：错误落在「标签列」内（左对齐、随标签列宽），
+   而不是录入栏那版贴右的窄栏 */
+.settings-item-error--label {
+    max-width: none;
+    text-align: left;
+}
+
+/* 关于页 · 软件更新 */
+
+/*
+ * 信息与动作左右分栏：左边四行信息，
+ * 右边两个按钮上下排、整体靠右。
+ */
+.update-panel {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-top: 16px;
+    padding: 0 20px 4px;
+}
+
+.update-panel-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.update-info-line {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+/* commit / 时间用等宽：扫一眼就能按位比较 */
+.update-info-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    word-break: break-all;
+}
+
+/* 「（已是最新版本）」跟着「当前版本」那一行，不单独占一行 */
+.update-info-note {
+    font-size: 12px;
+}
+
+.update-panel-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    flex-shrink: 0;
+    width: 100px;
+}
+
+.update-progress {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.update-progress-bar {
+    height: 100%;
+    border-radius: 3px;
+}
+
+.update-status {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+/* 关于 LightPlayer */
+.about-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* 与 .settings-item 的左右内边距对齐 */
+    padding: 4px 20px;
+}
+
+.about-line {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+/* 行内外链：UA 的 color / text-decoration 都要归一化，
+   否则没加载主题时会是一串 UA 蓝紫带下划线的链接 */
+.about-inline-link {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+
+/* 更新相关弹窗 */
+.update-modal-text {
+    margin: 0 0 6px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.update-modal-hint {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.update-modal-secondary,
+.update-modal-primary {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+.update-modal-secondary {
+    border-width: 1px;
+    border-style: solid;
+    background: none;
+}
+
+.update-modal-primary {
+    border: none;
+}
+
+.update-modal-secondary:disabled,
+.update-modal-primary:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+/* 更新日志弹窗：高度跟随内容，封顶 520px */
+.update-modal--changelog.modal-container {
+    max-height: min(80vh, 520px);
+    min-height: 240px;
+}
+
+/* 「当前版本」标记 */
+.update-changelog-current {
+    padding: 1px 6px;
+    border-radius: 4px;
+    border-width: 1px;
+    border-style: solid;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+/* 更新日志正文（Markdown 的极简渲染：标题 / 列表项 / 段落，内联语法原样显示） */
+.update-changelog {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.update-changelog-entry-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.update-changelog-version {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.update-changelog-date {
+    font-size: 12px;
+}
+
+.update-changelog-heading {
+    margin: 10px 0 4px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.update-changelog-item,
+.update-changelog-line {
+    margin: 2px 0;
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.update-changelog-item::before {
+    content: '· ';
+}
+
+.update-changelog-gap {
+    height: 6px;
+}
+
+.update-changelog-empty,
+.update-changelog-error {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+/* 快捷键：录入控件（边框/圆角/内边距见 shared 的 .settings-input） */
+.hotkey-input {
+    min-width: 120px;
+    height: 28px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.hotkey-input.is-recording {
+    border-style: dashed;
+}
+.hotkey-input:disabled {
+    cursor: not-allowed;
+}
+
+/* ===== 外观/主题页 ===== */
+
+/* 主题组：工具栏（图标按钮 + 内联新建输入框，位于分组标题右侧）
+   行布局走 shared 的 .settings-toolbar；按钮走通用 .icon-button--sm */
+
+/* 新建：展开用 width 过渡，触发器/输入区靠 opacity+transform 淡入淡出（不用 display，才能动画）。
+   overflow 必须用 clip 不能用 hidden —— hidden 仍是滚动容器，输入框一 focus 就会被它「滚进视口」，
+   与宽度过渡叠成双重运动。 */
+.theme-create-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    width: 32px;
+    flex-shrink: 0;
+    border-radius: 7px;
+    overflow: clip;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-create-wrapper.is-creating {
+    width: 220px;
+}
+
+/* 触发器（+）：折叠态可见，展开态淡出且不可点 */
+.theme-create-trigger {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 30px;
+    height: 30px;
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.theme-create-wrapper.is-creating .theme-create-trigger {
+    opacity: 0;
+    transform: scale(0.6);
+    pointer-events: none;
+}
+
+/* 输入区：输入框 + 确认按钮，折叠态右移淡出隐藏，展开态归位淡入 */
+.theme-create-field {
+    position: absolute;
+    inset: 0 0 0 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 30px;
+    padding-left: 30px;
+    opacity: 0;
+    transform: translateX(10px);
+    pointer-events: none;
+    transition: opacity 0.2s ease 0.05s, transform 0.2s ease 0.05s;
+}
+
+/* 定宽项必须 flex-shrink:0：容器宽度从 32 涨到 220，中途可用宽度小于内容总宽，
+   少了它会被压成 16px、到最后一帧才弹回（图标横跳）。溢出交给容器的 clip。 */
+.theme-create-confirm {
+    flex-shrink: 0;
+}
+
+.theme-create-wrapper.is-creating .theme-create-field {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+/* 新建输入框：基础几何见 shared 的 .settings-input */
+.theme-input {
+    width: 150px;
+    flex-shrink: 0;
+}
+
+/* 两列大砖（窄窗自动降单列）；砖高固定，避免「细长 / 空旷」两种极端 */
+.theme-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+    gap: 12px;
+    padding: 0 20px;
+}
+
+.theme-tile {
+    display: flex;
+    height: 112px;
+    border-radius: 10px;
+    border-width: 1px;
+    border-style: solid;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+/* 预览槽：有预览图铺图，没有则铺该主题的画布色（颜色由组件内联） */
+.theme-tile-preview {
+    position: relative;
+    width: 40%;
+    flex-shrink: 0;
+}
+
+.theme-tile-preview-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.theme-tile-body {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+}
+
+.theme-tile-head {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+}
+
+.theme-tile-name {
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.theme-tile-version {
+    font-size: 10.5px;
+    line-height: 1.5;
+    flex-shrink: 0;
+}
+
+.theme-tile-grow {
+    flex: 1;
+    min-width: 0;
+}
+
+.theme-tile-check {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.theme-tile-desc {
+    margin: 5px 0 0;
+    font-size: 11.5px;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.theme-tile-foot {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 30px;
+}
+
+/* 主色样例：让每块砖都能看到该主题的主色（选中态另有勾选标记） */
+.theme-tile-accent {
+    height: 20px;
+    width: 46px;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.theme-tile-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+}
+
+/* 只在悬停砖时显形；浮层开着时常显（选中砖已有勾选+主色描边，不再常挂删除） */
+.theme-tile:hover .theme-tile-actions,
+.theme-tile-actions.is-confirming {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* 删除按钮：几何复用 .icon-button + .center，只留 28px 方块 */
+.theme-del-btn {
+    width: 28px;
+    height: 28px;
+}
+
+/* 空 / 加载 状态（三个子页同形，共用一个规则） */
+.theme-empty,
+.theme-loading,
+.plugin-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 18px;
+    gap: 8px;
+    text-align: center;
+}
+
+.theme-empty-icon {
+    opacity: 0.4;
+}
+
+.theme-empty-text {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.theme-empty-hint {
+    font-size: 11.5px;
+    line-height: 1.5;
+    max-width: 260px;
+}
+
+.theme-loading-spinner {
+    width: 18px;
+    height: 18px;
+    border-width: 2px;
+    border-style: solid;
+    border-radius: 50%;
+    animation: theme-spin 0.8s linear infinite;
+}
+
+.theme-loading {
+    font-size: 12px;
+}
+
+@keyframes theme-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spin {
+    display: inline-flex;
+    animation: theme-spin 1s linear infinite;
+}
+
+/* ===== 桌面歌词页 ===== */
+
+/* ===== 配色方案（圆形布局） ===== */
+.desktop-lyric-scheme-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 8px;
+    padding: 12px 20px 6px;
+}
+
+.desktop-lyric-scheme-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-self: center;
+    gap: 4px;
+    padding: 4px 6px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.desktop-lyric-scheme-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+}
+
+/* 自定义配色圆：两个三角色块拼接 */
+.desktop-lyric-scheme-circle--custom {
+    position: relative;
+    overflow: hidden;
+}
+
+.desktop-lyric-color-half {
+    position: absolute;
+    inset: 0;
+    display: block;
+    cursor: pointer;
+}
+
+/* 已唱色：左上三角 */
+.desktop-lyric-color-half--played {
+    clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+/* 未唱色：右下三角 */
+.desktop-lyric-color-half--unplayed {
+    clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+/* 原生取色控件铺满三角、整体透明；不能用 visibility/display 藏（那样点不到、取色器打不开） */
+.desktop-lyric-color-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: none;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.desktop-lyric-scheme-name {
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.desktop-lyric-scheme-item.is-active .desktop-lyric-scheme-name {
+    font-weight: 500;
+}
+
+/* ===== 字体 ===== */
+.desktop-lyric-font-size {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* 加减按钮：几何复用 shared 的 .settings-btn，只留方形与居中 */
+.desktop-lyric-font-btn {
+    width: 28px;
+    padding: 0;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.desktop-lyric-font-size-input {
+    text-align: center;
+}
+
+/* 数字输入的上下箭头去掉：用两侧按钮调值 */
+.desktop-lyric-font-size-input::-webkit-inner-spin-button,
+.desktop-lyric-font-size-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* ===== 插件管理页 =====
+   工具栏行布局走 shared 的 .settings-toolbar */
+
+.plugin-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 2px 20px;
+}
+
+/* ===== 插件项 ===== */
+.plugin-item {
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    border-width: 1px;
+    border-style: solid;
+    padding: 14px 16px;
+}
+
+.plugin-item-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    cursor: pointer;
+}
+
+/* 展开箭头：几何复用 .icon-button + .center，只留 20px 与旋转过渡 */
+.plugin-expand {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+}
+
+.plugin-item.is-open .plugin-expand {
+    transform: rotate(90deg);
+}
+
+/* ===== 插件图标 ===== */
+.plugin-icon {
+    display: block;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.plugin-item-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+}
+
+.plugin-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    flex: 1;
+}
+
+.plugin-item-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.plugin-item-name {
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.plugin-item-version {
+    font-size: 11.5px;
+    line-height: 1.5;
+    flex-shrink: 0;
+}
+
+.plugin-badge {
+    font-size: 11px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    line-height: 1.5;
+    flex-shrink: 0;
+    font-weight: 500;
+}
+
+.plugin-item-desc {
+    font-size: 11.5px;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.plugin-item-enable {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: auto;
+    padding-left: 14px;
+}
+
+.plugin-error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* ===== 展开面板 ===== */
+.plugin-detail-wrap {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.24s ease;
+}
+
+.plugin-item.is-open .plugin-detail-wrap {
+    grid-template-rows: 1fr;
+}
+
+.plugin-detail {
+    overflow: hidden;
+    min-height: 0;
+    cursor: default;
+}
+
+.plugin-detail-inner {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top-width: 1px;
+    border-top-style: solid;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.plugin-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    font-size: 12px;
+}
+
+.plugin-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.plugin-meta-link {
+    border: none;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+}
+
+.plugin-meta-link:hover {
+    text-decoration: underline;
+}
+
+.plugin-meta-arrow {
+    font-size: 12px;
+}
+
+/* 插件 ID / 文件夹名：等宽，便于和文件系统里的目录对上号 */
+.plugin-meta-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    overflow-wrap: anywhere;
+}
+
+/* 页面说明：跟在列表后面 */
+.plugin-note {
+    margin: 12px 0 2px;
+    padding: 0 20px;
+    font-size: 11.5px;
+    line-height: 1.65;
+}
+
+.plugin-note b {
+    font-weight: 500;
+}
+
+.plugin-subsection-title {
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+/* 命令 / 提供者行：整行可点切换开关。 */
+.plugin-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    cursor: pointer;
+}
+
+.plugin-row:last-child {
+    border-bottom: none;
+}
+
+.plugin-row-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.plugin-row-name {
+    font-size: 12.5px;
+    line-height: 1.4;
+}
+
+.plugin-row-cmd {
+    font-size: 11px;
+    line-height: 1.5;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.plugin-row-toggle {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.plugin-detail-empty {
+    font-size: 12px;
+}
+
+/* ===== 展开面板底部操作区 ===== */
+.plugin-detail-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 2px;
+    gap: 4px;
+}
+
+.plugin-del-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12.5px;
+}
+
+.plugin-del-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* ===== 空状态（几何与主题页共用上面那条规则） ===== */
+.plugin-empty-text {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* ===== 卸载确认弹窗 ===== */
+.modal--plugin-uninstall.modal-container {
+    width: 400px;
+    max-width: calc(100vw - 48px);
+}
+
+.plugin-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* 目标行：图标（有才渲染）+ 名称 / 版本 / 数据摘要 */
+.plugin-confirm-target {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.plugin-confirm-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+}
+
+.plugin-confirm-target-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.plugin-confirm-name {
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.plugin-confirm-version {
+    font-size: 11.5px;
+    line-height: 1.4;
+}
+
+.plugin-confirm-hint {
+    font-size: 11.5px;
+    line-height: 1.45;
+}
+
+/* 影响段：一个段头 + 一组带图标的条目（语义配色见主题层） */
+.plugin-confirm-section {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.plugin-confirm-section-title {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.plugin-confirm-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.plugin-confirm-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.plugin-confirm-item .icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.plugin-confirm-pending {
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.plugin-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 2px;
+}
+
+.plugin-confirm-cancel {
+    height: 32px;
+    padding: 0 16px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.plugin-confirm-ok {
+    height: 32px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.plugin-confirm-ok:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* ===== 插件设置页：整个容器就是插件页面 =====
+   高度按「视口减外壳」，避免父级高度不确定时 iframe 塌成 0；内部留白归插件自己。 */
+.plugin-settings {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 200px);
+    min-height: 320px;
+}
+
+.plugin-settings--empty {
+    align-items: center;
+    justify-content: center;
+}
+
+.plugin-settings-frame {
+    flex: 1 1 auto;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* ===== 下载页 ===== */
+/* ===== 路径类操作行：路径文本 + 浏览 / 打开 ===== */
+.download-path-action {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    max-width: 60%;
+}
+
+/* 路径文本：单行省略，靠 title 看全路径 */
+.download-path {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ===== 本页操作按钮：几何见 shared 的 .settings-btn ===== */
+
+/* 下拉触发器 */
+.download-format-select {
+    min-width: 170px;
+    max-width: 100%;
+}
+
+/* 文件名格式的「效果预览」：单独占一行，排在描述文字之前 */
+.download-format-preview {
+    display: block;
+}
+
+/* 本地文件检查间隔的下拉触发器 */
+.download-interval-select {
+    min-width: 110px;
+    max-width: 100%;
+}
+
+/* ===== 缓存 ===== */
+.download-cache-total {
+    font-size: 12px;
+}
+
+/* 清除缓存项：勾选列表在标签下方，操作按钮与顶部对齐 */
+.settings-item--clear-cache {
+    align-items: flex-start;
+}
+
+.download-cache-categories {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.download-cache-category {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.download-cache-category-label {
+    font-size: 12.5px;
+}
+
+.download-cache-category-size {
+    font-size: 11.5px;
+}

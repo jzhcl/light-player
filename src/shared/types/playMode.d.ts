@@ -1,0 +1,1 @@
+type PlayMode = 'loop' | 'single' | 'random'

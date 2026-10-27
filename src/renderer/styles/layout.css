@@ -1,0 +1,36 @@
+/* ================================================================
+   布局样式（manifest）
+   只写尺寸、间距、圆角、字号、光标、溢出、可见性与交互态、几何过渡；颜色见 themes/*.css。
+
+   归属判据：一条声明若决定「元素在哪 / 能不能交互 / 看不看得见」，就归这里；
+   上色、过渡、动画归主题侧。所以「随能力开关一起生效的显隐」（如 slider 圆点的
+   auto-hide）算交互行为，归布局层；只把「渐变多久」（transition）留给主题侧。
+
+   为避免单文件过长，按区域拆分到子文件，本文件仅做 @import 汇总。
+
+   命名约定：
+     容器      语义名，不加 -container            app / titlebar / navbar / content / control
+     结构件    容器前缀 + 短横线                  navbar-item / navbar-icon / titlebar-logo
+     通用件    跨组件复用，无前缀                 icon-button / placeholder / popover / slider
+     修饰      -- 前缀，必须依附语义类            control-button--play / slider--auto-hide
+     工具·状态 is- 前缀，其余用全局裸名            .is-active / .is-dragging / .ellipsis / .center
+
+   通用组件（popover / icon-button / placeholder / slider…）的几何在 layout/components.css，
+   配色集中在 themes/light/components.css；其他页面需要差异化时，由该页面自己加选择器。
+
+   关于「跨 DOM 的场景差异化」：
+     调用方在传入时给完整类名（如 .control-volume-popover / .navbar-search-popover），
+     原语只负责拼接，主题层再按这个完整类名写场景规则。
+   ================================================================ */
+
+@import './layout/shell.css';
+@import './layout/titlebar.css';
+@import './layout/navbar.css';
+@import './layout/control.css';
+@import './layout/components.css';
+@import './layout/karaoke.css';
+@import './layout/song-list.css';
+@import './layout/content-page.css';
+@import './layout/settings.css';
+@import './layout/play.css';
+@import './layout/settings-page.css';

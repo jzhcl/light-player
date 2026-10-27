@@ -1,0 +1,162 @@
+/* ================================================================
+   浅色主题 · 底部播放控制栏
+   ================================================================ */
+
+/* 顶边进度轨同时充当分隔线：未播段即分割线色，已播段即主题色 */
+.control-timeline .slider-track {
+    background-color: var(--color-divider);
+}
+
+/* 已播段下方的渐隐，让进度像容器里升起的水位 */
+.control-timeline .slider-range::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    height: 16px;
+    background-image: linear-gradient(to bottom, rgba(var(--color-primary-rgb), 0.07), rgba(var(--color-primary-rgb), 0));
+    pointer-events: none;
+}
+
+/* 没有歌曲时轨道保持分隔线外观，不做整体变暗 */
+.control .control-progress[data-disabled] {
+    opacity: 1;
+}
+
+.control-time {
+    color: var(--color-text-tertiary);
+}
+
+/* 正在播放的那一端稍亮 */
+.control-time.is-start {
+    color: var(--color-text-secondary);
+}
+
+.control-cover {
+    background-color: var(--color-fill);
+    color: var(--color-text-tertiary);
+}
+
+.control-name {
+    color: var(--color-text-primary);
+}
+
+.control-artist,
+.control-lyric-text {
+    color: var(--color-text-tertiary);
+}
+
+.control-quality {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.control-quality:hover {
+    background-color: var(--color-fill);
+    color: var(--color-text-primary);
+}
+
+/* 音质面板：透明浮层的载体 */
+.control-quality-panel {
+    background-color: var(--color-surface);
+    border-color: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+}
+
+.control-quality-title {
+    color: var(--color-text-primary);
+}
+
+.control-quality-now-label {
+    color: var(--color-text-tertiary);
+}
+
+.control-quality-now-value {
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
+.control-quality-hint {
+    color: var(--color-text-secondary);
+}
+
+.control-quality-option-name {
+    color: var(--color-text-primary);
+}
+
+.control-quality-option {
+    background-color: transparent;
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.control-quality-option:hover {
+    background-color: var(--color-fill);
+}
+
+/* 换档中保持文字色，不使用浏览器的灰色禁用文字 */
+.control-quality-option:disabled {
+    color: inherit;
+}
+
+.control-quality-option-check,
+.control-quality-option.is-preferred .control-quality-option-name {
+    color: var(--color-primary);
+}
+
+/* 该源未提供这一档：减淡但保留可点 */
+.control-quality-option.is-unavailable .control-quality-option-name {
+    color: var(--color-text-tertiary);
+}
+
+.control-quality-option.is-unavailable:hover .control-quality-option-name {
+    color: var(--color-text-secondary);
+}
+
+.control-quality-option-spin {
+    color: var(--color-primary);
+    opacity: 0.75;
+}
+
+.control-divider {
+    background-color: var(--color-divider);
+}
+
+.control-button {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.control-button:disabled {
+    opacity: 0.4;
+}
+
+.control-button:hover:not(:disabled) {
+    background-color: var(--color-fill);
+    color: var(--color-text-primary);
+}
+
+.control-button.is-active {
+    color: var(--color-primary);
+}
+
+/* 激活态优先于通用悬停：已喜欢 / 已开启的模式不因悬停变回普通色 */
+.control-button.is-active:hover:not(:disabled) {
+    color: var(--color-primary);
+}
+
+.control-button--play {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+}
+
+.control-button--play:hover:not(:disabled) {
+    background-color: rgba(var(--color-primary-rgb), 0.85);
+    color: var(--color-text-inverse);
+}
+
+.control-volume-percent {
+    color: var(--color-text-tertiary);
+}

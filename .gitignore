@@ -2,7 +2,6 @@ node_modules/
 
 dist/
 release/
-!build/
 
 *.tsbuildinfo
 *.log
@@ -10,7 +9,7 @@ release/
 .DS_Store
 Thumbs.db
 
-# 本地验证套件（探针 / 验证脚本 / 预览台）
+# 本地验证套件
 .verify/
 .tmp-*/
 

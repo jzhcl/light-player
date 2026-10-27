@@ -1,0 +1,166 @@
+/* ================================================================
+   深色主题 · 底部播放控制栏
+   ================================================================ */
+
+.control {
+    background-color: var(--color-chrome);
+}
+
+/* 顶边进度轨同时充当分隔线 */
+.control-timeline .slider-track {
+    background-color: var(--color-divider);
+}
+
+/* 没有歌曲时轨道保持分隔线外观 */
+.control .control-progress[data-disabled] {
+    opacity: 1;
+}
+
+.control-time {
+    color: var(--color-text-tertiary);
+}
+
+.control-time.is-start {
+    color: var(--color-text-secondary);
+}
+
+.control-cover {
+    background-color: var(--color-surface-raised);
+    color: var(--color-text-tertiary);
+}
+
+.control-name {
+    color: var(--color-text-primary);
+}
+
+.control-artist,
+.control-lyric-text {
+    color: var(--color-text-tertiary);
+}
+
+.control-quality {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.control-quality:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-primary);
+}
+
+/* 音质面板：浮层级底色 + 阴影 */
+.control-quality-panel {
+    background-color: var(--color-surface-float);
+    border-color: transparent;
+    box-shadow: var(--shadow-float);
+}
+
+.control-quality-title {
+    color: var(--color-text-primary);
+}
+
+.control-quality-now-label {
+    color: var(--color-text-tertiary);
+}
+
+.control-quality-now-value {
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
+.control-quality-hint {
+    color: var(--color-text-secondary);
+}
+
+.control-quality-option-name {
+    color: var(--color-text-primary);
+}
+
+.control-quality-option {
+    background-color: transparent;
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.control-quality-option:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* 换档中保持文字色 */
+.control-quality-option:disabled {
+    color: inherit;
+}
+
+.control-quality-option-check {
+    color: var(--color-primary);
+}
+
+.control-quality-option.is-preferred .control-quality-option-name {
+    color: var(--color-text-primary);
+}
+
+.control-quality-option.is-unavailable .control-quality-option-name {
+    color: var(--color-text-tertiary);
+}
+
+.control-quality-option.is-unavailable:hover .control-quality-option-name {
+    color: var(--color-text-secondary);
+}
+
+.control-quality-option-spin {
+    color: var(--color-primary);
+    opacity: 0.75;
+}
+
+.control-divider {
+    background-color: var(--color-divider);
+}
+
+.control-button {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.control-button:disabled {
+    opacity: 0.4;
+}
+
+.control-button:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-primary);
+}
+
+.control-button.is-active {
+    color: var(--color-primary);
+}
+
+.control-button.is-active:hover:not(:disabled) {
+    color: var(--color-primary);
+}
+
+/* 主播放键：品牌红底 + 白色图案 */
+.control-button--play {
+    background-color: var(--color-brand);
+    color: var(--color-on-brand);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 6px 16px rgba(var(--color-brand-rgb), 0.24);
+}
+
+.control-button--play:hover:not(:disabled) {
+    background-color: rgb(244, 26, 102);
+    color: var(--color-on-brand);
+}
+
+/* 心形按钮：未喜欢也保持明亮，喜欢态用红色 */
+.control-button--like {
+    color: rgba(242, 242, 244, 0.78);
+}
+
+.control-button--like.is-active,
+.control-button--like.is-active:hover:not(:disabled) {
+    color: rgb(255, 71, 87);
+}
+
+.control-volume-percent {
+    color: var(--color-text-tertiary);
+}

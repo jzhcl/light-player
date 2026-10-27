@@ -1,0 +1,225 @@
+﻿/* ================================================================
+   深色主题 · 歌曲列表
+   ================================================================ */
+
+.song-head {
+    border-bottom-color: var(--color-divider);
+}
+
+.song-head .song-col {
+    color: var(--color-text-tertiary);
+}
+
+.song-row {
+    color: var(--color-text-primary);
+    background-color: transparent;
+    transition: background-color 0.15s ease;
+}
+
+.song-row:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+.song-row.is-selected {
+    background-color: rgba(var(--color-primary-rgb), 0.10);
+}
+
+.song-row.is-selected:hover {
+    background-color: rgba(var(--color-primary-rgb), 0.14);
+}
+
+.song-index,
+.song-index-idle {
+    color: var(--color-text-tertiary);
+}
+
+.song-index-paused {
+    color: var(--color-primary);
+}
+
+.song-play-toggle {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.song-play-toggle:hover {
+    background-color: rgba(var(--color-primary-rgb), 0.12);
+    color: var(--color-primary);
+}
+
+/* 本地可播放徽章：深绿底 + 白色勾，加一层贴合形状的投影 */
+.song-badge--local {
+    color: rgb(79, 156, 112);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
+
+.song-singers-sep,
+.song-singers-link {
+    color: var(--color-text-tertiary);
+}
+
+.song-singers-link {
+    transition: color 0.15s ease;
+}
+
+.song-singers-link:hover {
+    color: var(--color-primary);
+}
+
+.song-cover {
+    background-color: var(--color-surface-raised);
+}
+
+.song-row:hover .song-name {
+    color: var(--color-primary);
+}
+
+.song-singer,
+.song-album,
+.song-duration {
+    color: var(--color-text-tertiary);
+}
+
+.song-album:hover {
+    color: var(--color-primary);
+}
+
+.song-action {
+    color: var(--color-text-tertiary);
+    transition: color 0.15s ease;
+}
+
+/* 未喜欢的心形也保持明亮 */
+.song-action--like {
+    color: rgba(242, 242, 244, 0.72);
+}
+
+.song-action:hover {
+    color: var(--color-primary);
+}
+
+.song-action--like:hover {
+    color: rgb(255, 71, 87);
+}
+
+.song-action.is-active {
+    color: var(--color-danger);
+}
+
+/* 心形按钮：喜欢态用红色 */
+.song-action--like.is-active {
+    color: rgb(255, 71, 87);
+}
+
+.song-tag--plugin {
+    background-color: var(--color-surface-raised);
+    color: var(--color-text-secondary);
+    border-color: transparent;
+}
+
+.song-tag--quality {
+    background-color: transparent;
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.song-tag--size {
+    background-color: var(--color-surface-raised);
+    color: var(--color-text-tertiary);
+}
+
+.song-tag--dl-quality {
+    border-width: 0.5px;
+    border-style: solid;
+    background-color: transparent;
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.song-tag--missing {
+    background-color: transparent;
+    color: var(--color-danger);
+    border-color: var(--color-danger);
+}
+
+/* 本地文件已丢失的行：删线 */
+.song-rows .list-row.is-missing .song-name,
+.song-rows .list-row.is-missing .song-singer {
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+}
+
+/* 最近播放 */
+.song-played-count {
+    color: var(--color-text-secondary);
+}
+
+.song-last-played {
+    color: var(--color-text-tertiary);
+}
+
+.song-head .is-sortable:hover {
+    color: var(--color-text-primary);
+}
+
+.song-head .sort-indicator {
+    color: var(--color-primary);
+}
+
+/* 队列 */
+.queue-track {
+    background-color: transparent;
+    transition: background-color 0.15s ease;
+}
+
+.queue-track:hover,
+.queue-track:focus-within {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.queue-handle,
+.queue-remove {
+    background-color: transparent;
+    color: var(--color-text-tertiary);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.queue-handle:hover,
+.queue-remove:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--color-text-primary);
+}
+
+/* 拖拽中：抬升底色 + 阴影脱离列表 */
+.song-row.is-dragging,
+.queue-track.is-dragging {
+    background-color: var(--color-surface-raised);
+    box-shadow: var(--shadow-card);
+    opacity: 0.94;
+}
+
+.queue-index {
+    color: var(--color-text-tertiary);
+}
+
+.queue-name {
+    color: var(--color-text-primary);
+}
+
+.queue-track.is-current .queue-name {
+    color: var(--color-primary);
+}
+
+.queue-singer,
+.queue-duration {
+    color: var(--color-text-tertiary);
+}
+
+/* 歌曲已失效：整行降级为占位色，但仍留在队列里 */
+.queue-track.is-missing .queue-name,
+.queue-track.is-missing .queue-singer,
+.queue-track.is-missing .queue-duration,
+.queue-track.is-missing .queue-index {
+    color: var(--color-text-placeholder);
+}

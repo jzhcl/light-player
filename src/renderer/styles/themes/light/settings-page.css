@@ -1,0 +1,337 @@
+/* ================================================================
+   浅色主题 · 设置子页（关于 / 快捷键 / 外观 / 桌面歌词 / 插件 / 下载）
+   ================================================================ */
+
+/* 关于 · 软件更新 */
+.update-info-line {
+    color: var(--color-text-secondary);
+}
+
+/* commit / 时间比标签更实，用主文字色 */
+.update-info-mono {
+    color: var(--color-text-primary);
+}
+
+.update-info-note {
+    color: var(--color-text-tertiary);
+}
+
+.update-progress {
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+.update-progress-bar {
+    background-color: var(--color-primary);
+}
+
+.update-status {
+    color: var(--color-text-tertiary);
+}
+
+.update-status.is-error {
+    color: var(--color-danger);
+}
+
+/* 关于 LightPlayer */
+.about-line {
+    color: var(--color-text-secondary);
+}
+
+.about-inline-link {
+    color: var(--color-primary);
+}
+
+/* 更新弹窗 */
+.update-modal-text {
+    color: var(--color-text-primary);
+}
+
+.update-modal-hint {
+    color: var(--color-text-tertiary);
+}
+
+.update-modal-secondary {
+    color: var(--color-text-primary);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+.update-modal-secondary:hover:not(:disabled) {
+    border-color: rgba(0, 0, 0, 0.28);
+}
+
+.update-modal-primary {
+    color: var(--color-text-inverse);
+    background-color: var(--color-primary);
+}
+
+/* 更新日志正文 */
+.update-changelog-version {
+    color: var(--color-text-primary);
+}
+
+.update-changelog-date {
+    color: var(--color-text-tertiary);
+}
+
+.update-changelog-heading {
+    color: var(--color-text-primary);
+}
+
+.update-changelog-item,
+.update-changelog-line {
+    color: var(--color-text-secondary);
+}
+
+.update-changelog-empty {
+    color: var(--color-text-tertiary);
+}
+
+.update-changelog-error {
+    color: var(--color-danger);
+}
+
+/* 快捷键 */
+.hotkey-input:hover:not(:disabled) {
+    border-color: rgba(0, 0, 0, 0.28);
+}
+
+.hotkey-input.is-recording {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.hotkey-input.is-error {
+    border-color: var(--color-danger);
+}
+
+.hotkey-input:disabled {
+    opacity: 0.5;
+}
+
+.settings-item-error {
+    color: var(--color-danger);
+}
+
+/* 外观与主题 */
+.theme-tile {
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    border-color: var(--color-divider);
+    transition: border-color 0.15s ease;
+}
+
+.theme-tile:hover {
+    border-color: color-mix(in srgb, var(--color-text-primary) 24%, transparent);
+}
+
+.theme-tile.is-active {
+    border-color: var(--color-primary);
+}
+
+.theme-tile-version {
+    color: var(--color-text-tertiary);
+}
+
+.theme-tile-desc {
+    color: var(--color-text-secondary);
+}
+
+.theme-tile-check {
+    color: var(--color-primary);
+}
+
+.theme-del-btn:hover:not(:disabled) {
+    color: var(--color-danger);
+    background-color: rgba(var(--color-danger-rgb), 0.1);
+}
+
+.theme-empty-text,
+.plugin-empty-text {
+    color: var(--color-text-primary);
+}
+
+.theme-empty-hint,
+.theme-loading {
+    color: var(--color-text-tertiary);
+}
+
+.theme-loading-spinner {
+    border-color: rgba(0, 0, 0, 0.15);
+    border-top-color: var(--color-primary);
+}
+
+/* 桌面歌词 */
+.desktop-lyric-scheme-item {
+    background-color: transparent;
+    border: none;
+    color: var(--color-text-secondary);
+}
+
+.desktop-lyric-scheme-circle {
+    --dl-circle-shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 2px 8px rgba(0, 0, 0, 0.05);
+    /* 两态阴影列表等长，过渡才不会闪 */
+    box-shadow: 0 0 0 0 transparent, var(--dl-circle-shadow);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.desktop-lyric-scheme-item.is-active .desktop-lyric-scheme-circle {
+    box-shadow: 0 0 0 2px var(--color-primary), var(--dl-circle-shadow);
+}
+
+.desktop-lyric-font-btn:hover:not(:disabled) {
+    color: var(--color-primary);
+}
+
+/* 插件管理 */
+.plugin-item {
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.plugin-item.is-error {
+    border-color: rgba(var(--color-danger-rgb), 0.5);
+}
+
+.plugin-item-name {
+    color: var(--color-text-primary);
+}
+
+.plugin-item-version,
+.plugin-item-desc {
+    color: var(--color-text-tertiary);
+}
+
+/* 状态徽章：绿=运行中 / 主色=未启用 / 灰=已停用 / 红=异常 */
+.plugin-badge--active {
+    background-color: rgba(52, 168, 83, 0.12);
+    color: rgb(46, 150, 73);
+}
+
+.plugin-badge--installed {
+    background-color: rgba(var(--color-primary-rgb), 0.12);
+    color: var(--color-primary);
+}
+
+.plugin-badge--inactive {
+    background-color: rgba(0, 0, 0, 0.08);
+    color: var(--color-text-tertiary);
+}
+
+.plugin-badge--error {
+    background-color: rgba(var(--color-danger-rgb), 0.12);
+    color: var(--color-danger);
+}
+
+.plugin-error {
+    color: var(--color-danger);
+}
+
+.plugin-detail-inner {
+    border-top-color: rgba(0, 0, 0, 0.1);
+}
+
+.plugin-subsection-title {
+    color: var(--color-text-secondary);
+}
+
+.plugin-row {
+    border-bottom-color: var(--color-divider);
+}
+
+.plugin-row-name {
+    color: var(--color-text-primary);
+}
+
+.plugin-row-cmd {
+    color: var(--color-text-tertiary);
+}
+
+.plugin-detail-empty,
+.plugin-meta-key,
+.plugin-note {
+    color: var(--color-text-tertiary);
+}
+
+.plugin-meta-link {
+    color: var(--color-primary);
+    background: transparent;
+}
+
+.plugin-del-btn {
+    color: var(--color-danger);
+    background-color: rgba(var(--color-danger-rgb), 0.1);
+}
+
+.plugin-del-btn:hover:not(:disabled) {
+    background-color: rgba(var(--color-danger-rgb), 0.18);
+}
+
+.plugin-empty .icon {
+    color: var(--color-text-tertiary);
+}
+
+/* 卸载确认 */
+.plugin-confirm-name {
+    color: var(--color-text-primary);
+}
+
+.plugin-confirm-version,
+.plugin-confirm-hint {
+    color: var(--color-text-tertiary);
+}
+
+.plugin-confirm-section-title {
+    color: var(--color-text-secondary);
+}
+
+/* 影响条目：代价（红）/ 安心（绿）/ 中性说明（灰） */
+.plugin-confirm-item--loss {
+    color: var(--color-danger);
+}
+
+.plugin-confirm-item--safe {
+    color: rgb(46, 150, 73);
+}
+
+.plugin-confirm-item--note {
+    color: var(--color-text-tertiary);
+}
+
+.plugin-confirm-pending {
+    color: var(--color-text-tertiary);
+}
+
+.plugin-confirm-cancel {
+    color: var(--color-text-primary);
+    border-color: rgba(0, 0, 0, 0.15);
+    background-color: var(--color-surface);
+}
+
+.plugin-confirm-cancel:hover {
+    border-color: rgba(0, 0, 0, 0.28);
+}
+
+.plugin-confirm-ok {
+    color: var(--color-text-inverse);
+    background-color: var(--color-danger);
+}
+
+/* 下载 */
+.download-path {
+    color: var(--color-text-tertiary);
+}
+
+.download-format-preview {
+    color: var(--color-text-secondary);
+}
+
+.download-cache-total {
+    color: var(--color-text-tertiary);
+}
+
+.download-cache-category-label {
+    color: var(--color-text-secondary);
+}
+
+.download-cache-category-size {
+    color: var(--color-text-tertiary);
+}

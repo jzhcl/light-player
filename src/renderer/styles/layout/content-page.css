@@ -1,0 +1,1156 @@
+/* ================================================================
+   内容页几何（content-page）
+   搜索 / 最近播放 / 我喜欢 / 用户歌单 / 本地与下载 五个页面布局同构，
+   共用一个外壳：页容器 → 页头（信息 + 操作）→ 列表区（表头 + 滚动区 / 空态）。
+   各页独有的几何（搜索页脚与加载指示器、歌单页头与编辑弹窗等）也收在本文件末段。
+   颜色与视觉过渡见 themes/light/content-page.css。
+
+   命名：
+     .content-page          页容器（flex 列 + 顶部留白）
+     .content-header*       页头（信息区 + 操作区）
+     .content-title/-meta   标题 / 副标题（歌曲数、总时长…）
+     .content-play-btn      主色胶囊（播放）
+     .content-add-btn       次要描边胶囊（如「添加歌曲」）
+     .content-list-wrap     列表区（表头 + 滚动区）
+     .content-empty*        空态 / 加载态
+   ================================================================ */
+.content-page {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 16px 0 0;
+}
+
+.content-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 16px 20px;
+    flex-shrink: 0;
+}
+
+.content-header-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.content-title {
+    margin: 0;
+    min-width: 0;
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.content-meta {
+    margin: 4px 0 0;
+    font-size: 13px;
+    min-height: 18px;
+}
+
+.content-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+/* 主色胶囊：纯色块会显得平，主题层再补「接触阴影 + 主色辉光」两层立起层次 */
+.content-play-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 18px;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+/* 次要动作：描边胶囊（如「添加歌曲」），与主色胶囊并排放 */
+.content-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 14px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 18px;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.content-play-btn:active,
+.content-add-btn:active {
+    transform: scale(0.97);
+}
+
+.content-play-btn:disabled,
+.content-add-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.content-list-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+/* 空态 / 加载态：由页面渲染 */
+.content-empty {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100%;
+    font-size: 14px;
+}
+
+.content-empty-icon {
+    opacity: 0.4;
+}
+
+.content-empty-text {
+    margin: 0;
+    font-size: 15px;
+}
+
+.content-empty-hint {
+    margin: 0;
+    font-size: 13px;
+    opacity: 0.75;
+}
+
+/* ================================================================
+   搜索页专属：来源 Tab 栏 / 触底加载的页脚 / 哨兵 / 加载指示器
+   ================================================================ */
+
+/* 来源 Tab 栏：插件筛选 */
+.search-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 16px 12px;
+    flex-shrink: 0;
+    overflow-x: auto;
+}
+
+.search-tab {
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 15px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.search-tab:active {
+    transform: scale(0.97);
+}
+
+.search-tab:disabled {
+    cursor: not-allowed;
+}
+
+/* 触底加载哨兵：空元素，仅作为 IntersectionObserver 的观察目标 */
+.search-sentinel {
+    height: 1px;
+}
+
+/* 表体末尾：加载中 / 已加载全部 / 本页无进展 */
+.search-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px 0 12px;
+    font-size: 13px;
+}
+
+/* 重试按钮：搜索页空态 / 页脚、歌单页加载失败空态共用（`.content-retry` 是通用别名） */
+.search-retry,
+.content-retry {
+    display: inline-flex;
+    align-items: center;
+    height: 26px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 13px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.search-retry:active,
+.content-retry:active {
+    transform: scale(0.97);
+}
+
+.search-spinner {
+    width: 18px;
+    height: 18px;
+    border-width: 2px;
+    border-style: solid;
+    border-radius: 50%;
+    animation: search-spin 0.8s linear infinite;
+}
+
+@keyframes search-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ================================================================
+   用户歌单详情页专属：封面 + 信息 + 操作页头，以及「编辑信息」弹窗
+   ================================================================ */
+
+/* ===== 页头：封面 + 信息 + 操作（区别于其它内容页的纯文字页头）===== */
+.playlist-header {
+    display: flex;
+    gap: 24px;
+    padding: 0 16px 24px;
+    flex-shrink: 0;
+}
+
+/* 方形封面：无图时同尺寸显示占位，故自身即居中容器。
+   `position` / `overflow` 是给主题侧装饰伪元素留的锚点；
+   阴影、光泽、内描边与悬停放大都在主题里。 */
+.playlist-cover {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 160px;
+    height: 160px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+/* 封面图 */
+.playlist-cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 右侧纵向两段：信息贴顶，操作贴底（与封面下沿齐平） */
+.playlist-header-right {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.playlist-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.playlist-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+/* 编辑按钮：默认隐形，悬停信息区（或键盘聚焦到它）时才浮出 */
+.playlist-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    flex-shrink: 0;
+    cursor: pointer;
+    opacity: 0;
+}
+
+.playlist-header-info:hover .playlist-edit-btn,
+.playlist-edit-btn:focus-visible {
+    opacity: 1;
+}
+
+.playlist-edit-btn:active {
+    transform: scale(0.95);
+}
+
+.playlist-desc {
+    margin: 6px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* 页头副标题：图标 + 文本两项（歌曲数 / 总时长）。
+   与其它内容页的纯文本 `.content-meta` 不同 —— 这里每项都带图标，
+   故不复用 content-meta，单独给几何。min-height 用于占住加载期的高度，
+   避免取数完成后页头高度跳一下。 */
+.playlist-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    margin: 6px 0 0;
+    min-height: 18px;
+}
+
+.playlist-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+}
+
+.playlist-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: auto;
+    flex-shrink: 0;
+}
+
+/* 拖入外部音频文件时的落点提示：整个列表区给一圈内缩虚线。
+   落点就是列表区本身，空态也在其中，故没有额外的覆盖层。 */
+.content-list-wrap.is-drop-active {
+    outline-width: 2px;
+    outline-style: dashed;
+    outline-offset: -8px;
+    border-radius: 10px;
+}
+
+/* ===== 编辑信息弹窗 ===== */
+.playlist-edit-modal.modal-container {
+    min-width: 0;
+}
+
+.playlist-edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.playlist-edit-field + .playlist-edit-field {
+    margin-top: 14px;
+}
+
+.playlist-edit-label {
+    font-size: 13px;
+}
+
+.playlist-edit-input,
+.playlist-edit-textarea {
+    width: 100%;
+    padding: 7px 10px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 13px;
+    outline: none;
+}
+
+.playlist-edit-textarea {
+    resize: vertical;
+    min-height: 62px;
+}
+
+.playlist-edit-cover-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* 封面选择：未选时是「虚线框 + 提示」，已选时整块变成图片预览 */
+.playlist-edit-cover {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 96px;
+    height: 96px;
+    padding: 0;
+    border-width: 1px;
+    border-style: dashed;
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.playlist-edit-cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.playlist-edit-cover-remove {
+    padding: 0;
+    border: none;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.playlist-edit-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.playlist-edit-cancel,
+.playlist-edit-save {
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.playlist-edit-cancel {
+    border-width: 1px;
+    border-style: solid;
+}
+
+.playlist-edit-save {
+    border: none;
+}
+
+.playlist-edit-save:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* ================================================================
+   本地与下载页专属：删除确认弹窗
+   ================================================================ */
+.local-download-del-modal.modal-container {
+    min-width: 0;
+}
+
+.local-download-del-text {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.local-download-del-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    font-size: 13px;
+}
+
+/* 丢失文件的路径：长路径必须能换行，且不撑破弹窗 */
+.local-download-missing-path {
+    display: inline-block;
+    max-width: 100%;
+    word-break: break-all;
+    font-size: 12px;
+}
+
+.local-download-del-check-text {
+    cursor: pointer;
+    user-select: none;
+}
+
+.local-download-del-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.local-download-del-cancel,
+.local-download-del-danger {
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.local-download-del-cancel {
+    border-width: 1px;
+    border-style: solid;
+}
+
+.local-download-del-danger {
+    border: none;
+}
+
+.local-download-del-cancel:disabled,
+.local-download-del-danger:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* ================================================================
+   本地与下载页专属：三个 Tab（本地歌曲 / 下载歌曲 / 下载记录）
+   几何与搜索页来源 Tab 同构，颜色见主题层。
+   ================================================================ */
+/* Tab：文本即 Tab 项 */
+.ld-tabs {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin: 0 16px 12px;
+    padding: 0;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    flex-shrink: 0;
+}
+
+.ld-tabs__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    margin-bottom: -1px;
+    padding: 0 2px;
+    border: none;
+    border-radius: 0;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    position: relative;
+    text-decoration: none;
+}
+
+/* ===== 本地与下载页：添加（split button）=====
+   主操作「添加」+ 右侧下拉箭头，两段拼成一颗胶囊（圆角在两侧分段）。几何见 layout，
+   配色复用 .content-add-btn（透明底 + 分割线边框），主题层不另写。 */
+.ld-add-split {
+    display: inline-flex;
+    align-items: stretch;
+    height: 36px;
+}
+
+.ld-add-split__main {
+    border-radius: 18px 0 0 18px;
+}
+
+.ld-add-split__caret {
+    border-radius: 0 18px 18px 0;
+    margin-left: -1px;
+    padding: 0 8px;
+}
+
+.ld-add-split__caret:disabled {
+    cursor: not-allowed;
+}
+
+/* 下拉菜单项 */
+.ld-add-menu-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 150px;
+    padding: 9px 12px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+/* ================================================================
+   下载记录 Tab：自定义列表
+   结构：.dl-tab > .dl-toolbar + (.dl-scroll > .dl-list > .dl-item* | 空态)
+   ================================================================ */
+.dl-tab {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.dl-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px 12px;
+    flex-shrink: 0;
+}
+
+.dl-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.dl-tool-btn:active {
+    transform: scale(0.97);
+}
+
+.dl-tool-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.dl-scroll {
+    flex: 1;
+    min-height: 0;
+}
+
+.dl-scroll-view {
+    width: 100%;
+    height: 100%;
+}
+
+.dl-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 8px 8px;
+}
+
+/* 单行：封面 | 信息 | 状态 | 操作 */
+.dl-item {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 64px auto;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: default;
+}
+
+.dl-item__pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.dl-item__cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.dl-item__info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.dl-item__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.dl-item__name {
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 0;
+}
+
+/* 音质标签：胶囊 */
+.dl-item__quality {
+    flex-shrink: 0;
+    padding: 1px 6px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 4px;
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+.dl-item__meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    font-size: 12px;
+}
+
+.dl-item__singer {
+    min-width: 0;
+}
+
+.dl-item__size {
+    flex-shrink: 0;
+}
+
+.dl-item__progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.dl-item__progress-bar {
+    flex: 1;
+    min-width: 0;
+    height: 4px;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.dl-item__progress-fill {
+    height: 100%;
+    border-radius: 2px;
+}
+
+.dl-item__speed {
+    flex-shrink: 0;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.dl-item__status {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.dl-status {
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.dl-item__error {
+    font-size: 11px;
+    line-height: 1.35;
+    margin-top: 4px;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dl-item__actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.dl-item__action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.dl-item__action:active {
+    transform: scale(0.94);
+}
+
+/* ===== 清除所有下载记录确认弹窗 ===== */
+.dl-clear-modal.modal-container {
+    min-width: 0;
+}
+
+.dl-clear-text {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.dl-clear-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.dl-clear-cancel,
+.dl-clear-danger {
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.dl-clear-cancel {
+    border-width: 1px;
+    border-style: solid;
+}
+
+.dl-clear-danger {
+    border: none;
+}
+
+.dl-clear-cancel:disabled,
+.dl-clear-danger:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* ================================================================
+   扫描目录导入弹窗
+   弹窗尺寸由内联 contentStyle 给定（700×500，flex 列）。
+   ================================================================ */
+.scan-modal {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+/* 配置阶段：目录选择 + 过滤选项 + 操作 */
+.scan-config {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 8px 4px;
+}
+
+.scan-config__row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.scan-config__label {
+    flex-shrink: 0;
+    width: 64px;
+    font-size: 13px;
+}
+
+.scan-config__input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.scan-config__input {
+    flex: 1;
+    min-width: 0;
+    height: 32px;
+    padding: 0 10px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 13px;
+    outline: none;
+}
+
+.scan-config__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    padding: 0 14px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 6px;
+    font-size: 13px;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.scan-config__btn:active {
+    transform: scale(0.97);
+}
+
+.scan-config__btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.scan-config__option {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.scan-config__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+/* 扫描/解析进行中 */
+.scan-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex: 1;
+    text-align: center;
+    font-size: 14px;
+}
+
+.scan-spinner {
+    width: 28px;
+    height: 28px;
+    border-width: 3px;
+    border-style: solid;
+    border-radius: 50%;
+    animation: scan-spin 0.8s linear infinite;
+}
+
+@keyframes scan-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.scan-loading__progress {
+    margin: 0;
+    font-size: 13px;
+}
+
+/* 结果预览阶段 */
+.scan-results {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.scan-results__header {
+    display: flex;
+    align-items: center;
+    padding: 4px 4px 10px;
+    flex-shrink: 0;
+}
+
+.scan-results__count {
+    font-size: 13px;
+}
+
+.scan-results__scroll {
+    flex: 1;
+    min-height: 0;
+}
+
+.scan-results__scroll-view {
+    width: 100%;
+    height: 100%;
+}
+
+.scan-results__list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 4px 8px;
+}
+
+.scan-result-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: default;
+}
+
+.scan-result-item__info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-width: 0;
+}
+
+.scan-result-item__name {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.scan-result-item__meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.scan-result-item__path {
+    font-size: 12px;
+}
+
+.scan-result-item__remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.scan-result-item__remove:active {
+    transform: scale(0.94);
+}
+
+.scan-results__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 4px 0;
+    flex-shrink: 0;
+}
+
+/* 结果阶段：列表在弹窗内独立滚动，底部「取消 / 确认导入」固定不随内容滚动。
+   扫描弹窗自带滚动管理（.scan-results__scroll）→ Modal 的滚动视口在这里只作透明包裹：
+   不溢层 ⇒ 自定义滑块永不出现（flex 列与 min-height 已由 .modal-content / .modal-scroll-view 内建）。 */
+.scan-modal-wrap .modal-scroll-view {
+    overflow: visible;
+}
+
+/* ===== 播放队列浮层外壳（原 layout/queue.css；行在 song-list.css） ===== */
+/* ================================================================
+   播放队列浮层（queue）几何。
+
+   面板挂在底栏右侧的队列按钮上（Popover side=top），**无遮罩**：
+   开着时其它区域照常可交互。行骨架见 features/queue/QueuePanel.tsx。
+   配色见 themes/light/queue.css。
+   ================================================================ */
+
+/* 队列面板自己就是整张卡片，所以走 `.popover--bare`：让掉通用 Popover 的内层载体
+   （内边距 / 边框 / 圆角 / 宽度约束），可见载体由 `.queue-panel` 承担（配色见 themes/light/queue.css）。
+   这里只留壳层的宽度。 */
+.popover.queue-popover {
+    width: 360px;
+}
+
+.queue-panel {
+    display: flex;
+    flex-direction: column;
+    height: min(60vh, 460px);
+    max-height: var(--radix-popover-content-available-height, 60vh);
+    /* 载体：圆角 + 裁剪，让行内容不越过圆角 */
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.queue-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-shrink: 0;
+    padding: 12px 10px 10px 14px;
+}
+
+.queue-header-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+}
+
+.queue-header-name {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.queue-header-count {
+    flex-shrink: 0;
+    font-size: 12px;
+}
+
+/* 超闸门提示：紧贴头部下方单独占一行，不参与列表滚动 */
+.queue-header-hint {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0 14px 8px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.queue-clear {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    height: 26px;
+    padding: 0 8px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.queue-clear:disabled {
+    cursor: default;
+    opacity: 0.4;
+}
+
+.queue-empty {
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 0;
+}
+
+.queue-empty-text {
+    margin: 10px 0 0;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.queue-empty-hint {
+    margin: 0;
+    font-size: 12px;
+}
+
+.queue-scroll {
+    flex: 1;
+    min-height: 0;
+}
+
+.queue-scroll-view {
+    width: 100%;
+    height: 100%;
+}

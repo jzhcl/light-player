@@ -1,0 +1,445 @@
+/* ================================================================
+   歌曲列表几何（song-list）：歌曲行栅格与各列 + 各页列宽 + 队列行。
+   所有出现「歌曲列表」的页面（最近 / 搜索 / 我喜欢 / 歌单 / 本地与下载 / 队列）共用本文件。
+   颜色见 themes/light/song-list.css。
+   ================================================================ */
+
+/* 栅格本体：表头与行容器共用 */
+.song-grid {
+    display: grid;
+    align-items: center;
+    gap: 12px;
+}
+
+.song-head {
+    height: 40px;
+    flex-shrink: 0;
+    padding: 0 16px;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+}
+
+.song-head .song-col {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.song-scroll {
+    flex: 1;
+    min-height: 0;
+}
+
+.song-scroll-view {
+    width: 100%;
+    height: 100%;
+}
+
+.song-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 8px;
+}
+
+.song-row {
+    min-height: 52px;
+    padding: 6px 16px;
+    border-radius: 8px;
+    cursor: default;
+    outline: none;
+    /* 屏外行跳过样式/布局/绘制；占位高度 40 = 52 行高 − 上下 padding。有视觉异常就删这两行 */
+    content-visibility: auto;
+    contain-intrinsic-size: auto 40px;
+}
+
+.song-row.is-dragging {
+    z-index: 20;
+    cursor: grabbing;
+}
+
+.song-col {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.song-col--actions {
+    padding-right: 12px;
+}
+
+/* 序号 / 波形 / 暂停图标叠在同一格，悬停换成播放按钮 */
+.song-col--index {
+    display: grid;
+    place-items: center;
+}
+
+.song-col--index > * {
+    grid-area: 1 / 1;
+}
+
+/* 显隐由行悬停驱动，故意不加过渡（每帧重绘 + 提升合成层）。
+   pointer-events:none 必需：opacity<1 会成为层叠上下文，全透明也挡住上面的播放按钮 */
+.song-index-idle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.song-index {
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.song-play-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.song-row:hover .song-index-idle,
+.song-row:focus-visible .song-index-idle {
+    opacity: 0;
+}
+
+.song-row:hover .song-play-toggle,
+.song-row:focus-visible .song-play-toggle,
+.song-play-toggle:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.song-cover {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.song-title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    min-width: 0;
+}
+
+.song-title-main {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+/* 无过渡 */
+.song-name {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.song-singer {
+    font-size: 12px;
+}
+
+.song-badge--local {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.song-singers {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    font-size: 12px;
+}
+
+.song-singers-sep {
+    flex-shrink: 0;
+}
+
+/* 文字色过渡归主题 */
+.song-singers-link {
+    min-width: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.song-album {
+    width: 100%;
+    font-size: 13px;
+}
+
+/* 无专辑时的 '-' 占位右移 4px（≈一个空格宽），避免它与列头「专辑」严格同起点而看起来像表头的一部分 */
+.song-album--empty {
+    padding-left: 4px;
+}
+
+/* 时长靠左：它本来就是最右一列，再右对齐会直接顶到行右内边距上 */
+.song-duration {
+    width: 100%;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.song-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+
+/* 图标按钮永不压缩，宁可让内容吃掉右侧的列间距，也不改变控件的固有尺寸 */
+.song-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.song-action--like {
+    opacity: 0.55;
+}
+
+.song-action--like.is-active {
+    opacity: 1;
+}
+
+.song-row:hover .song-action--like {
+    opacity: 1;
+}
+
+.song-tag {
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.song-tag--plugin {
+    max-width: 64px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 列表页音质标签：描边形态（下载页为填充形态） */
+.song-tag--quality {
+    border-width: 0.5px;
+    border-style: solid;
+}
+
+/* 与音质标签同形 */
+.song-tag--missing {
+    border-width: 0.5px;
+    border-style: solid;
+}
+
+/* 本地文件已丢失的行：整体变暗 */
+.song-rows .list-row.is-missing .song-name,
+.song-rows .list-row.is-missing .song-col--album,
+.song-rows .list-row.is-missing .song-col--duration {
+    opacity: 0.55;
+}
+
+/* ===== 各页列宽 ===== */
+.content-page .song-grid {
+    grid-template-columns: 48px 56px minmax(0, 1fr) 130px minmax(0, 1fr) 72px;
+}
+
+/* 本地与下载页：操作列放宽到 150px，容纳「下载歌曲」Tab 的完整音质标签 + 文件大小 */
+.content-page.local-download .song-grid {
+    grid-template-columns: 48px 56px minmax(0, 1fr) 150px minmax(0, 1fr) 72px;
+}
+
+/* ===== 最近播放页 ===== */
+/* 7 列：# / 封面 / 歌曲 / 专辑 / 播放次数 / 最近播放 / 时长 */
+.content-page .song-grid--recent {
+    grid-template-columns: 48px 56px minmax(0, 1fr) minmax(0, 1fr) 80px 100px 72px;
+}
+
+/* 播放次数 / 最近播放：等宽数字防跳动 */
+.song-played-count,
+.song-last-played {
+    width: 100%;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 可排序表头：图标与文字同行居中 */
+.song-head .is-sortable {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.song-head .sort-indicator {
+    flex-shrink: 0;
+}
+
+/* ===== 播放队列的行 ===== */
+.queue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 6px 8px;
+}
+
+.queue-track {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    height: 52px;
+    padding: 0 8px;
+    border-radius: 8px;
+    cursor: default;
+    outline: none;
+    user-select: none;
+}
+
+/* 拖拽中的那一行要压在相邻行之上，否则行间位移时会被盖住 */
+.queue-track.is-dragging {
+    z-index: 1;
+}
+
+/* 左槽：序号 / 波形 / 拖动柄叠在同一格 */
+.queue-slot {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+}
+
+.queue-index {
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 拖动柄铺满左槽：常态全透明让出命中，hover / 行焦点 / 拖拽时才接手 */
+.queue-handle {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    cursor: grab;
+    opacity: 0;
+    pointer-events: none;
+    /* dnd-kit 的指针传感器要独占触摸手势，否则移动端会先滚列表 */
+    touch-action: none;
+}
+
+.queue-handle:active {
+    cursor: grabbing;
+}
+
+.queue-track:hover .queue-index,
+.queue-track:focus-within .queue-index,
+.queue-track:hover .wave,
+.queue-track:focus-within .wave,
+.queue-track.is-dragging .queue-index,
+.queue-track.is-dragging .wave {
+    opacity: 0;
+}
+
+.queue-track:hover .queue-handle,
+.queue-track:focus-within .queue-handle,
+.queue-track.is-dragging .queue-handle {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.queue-cover {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 6px;
+    object-fit: cover;
+}
+
+.queue-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.queue-name {
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.queue-singer {
+    font-size: 11px;
+    line-height: 1.3;
+}
+
+/* 右侧接力的是定宽 24px 移除按钮，各行时长右缘因而对齐 */
+.queue-duration {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+/* 移除按钮：定宽常驻（只做显隐），免得显形时把时长挤走 */
+.queue-remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.queue-track:hover .queue-remove,
+.queue-track:focus-within .queue-remove {
+    opacity: 1;
+    pointer-events: auto;
+}
