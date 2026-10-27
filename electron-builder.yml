@@ -1,0 +1,57 @@
+appId: com.lightplayer.app
+productName: LightPlayer
+directories:
+  output: release/${version}
+
+files:
+  - dist/**/*
+
+extraResources:
+  # 主进程可读的静态资源
+  - from: src/shared/assets
+    to: static
+
+beforeBuild: ./build/before-build.mjs
+
+# 自动更新链路的文件名约束，别改回默认的 "LightPlayer Setup 0.1.0.exe"：
+#   latest.yml 里的 path / url 就是这个文件名，两类 provider 都会把它拼进 URL。
+#   带空格要编码成 %20，而 GitHub 的 releases/download/<tag>/<asset> 对编码后的名字匹配很脆。
+#
+# 末尾 -setup 是给「在 Release 页面挑文件的人」看的：那里同时躺着 latest.yml、.blockmap
+# 和两个 GitHub 自动附加的 Source code 包，只有安装包需要被一眼认出来。
+# ⚠️ 这个后缀只在单一 nsis target 下安全 —— 当年加 msiWrapped 时它让
+#   MsiWrappedTarget.getExeSourcePath 拼出的 exe 名与磁盘不一致，直接报
+#   "NSIS executable not found"。将来再加多 target，记得回来处理命名。
+artifactName: ${productName}-${version}-${arch}-setup.${ext}
+
+# 仅打包 Windows
+win:
+  target:
+    - nsis
+  icon: src/shared/assets/images/logo-icon-round.png
+
+nsis:
+  # 辅助安装器：没有这一项就没有任何可交互页面，allowToChangeInstallationDirectory 会被直接拒绝
+  oneClick: false
+  # 可选安装位置；模板会自动补一层 LightPlayer 子目录
+  allowToChangeInstallationDirectory: true
+  # 显示"所有用户 / 仅当前用户"选择页，默认选中所有用户
+  selectPerMachineByDefault: true
+  # 构建期默认创建；是否真的保留由 build/installer.nsh 的自定义页决定
+  createStartMenuShortcut: true
+  createDesktopShortcut: true
+  shortcutName: LightPlayer
+  # 不要设 menuCategory: true —— 它要求 package.json 里有 author，否则构建直接报错
+  # 数据删除交给自定义卸载询问，不用内置的静默删除
+  deleteAppDataOnUninstall: false
+  include: build/installer.nsh
+
+# 更新源：GitHub Releases。
+publish:
+  provider: github
+  owner: jzhcl
+  repo: light-player
+
+# GitHub releases 直连可能会超时，electron 压缩包与校验文件走 npmmirror
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/
