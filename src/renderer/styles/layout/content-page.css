@@ -823,7 +823,6 @@
 
 /* ================================================================
    扫描目录导入弹窗
-   弹窗尺寸由内联 contentStyle 给定（700×500，flex 列）。
    ================================================================ */
 .scan-modal {
     display: flex;
@@ -832,7 +831,7 @@
     min-height: 0;
 }
 
-/* 配置阶段：目录选择 + 过滤选项 + 操作 */
+/* 配置阶段：目录选择 + 过滤选项 */
 .scan-config {
     display: flex;
     flex-direction: column;
@@ -904,13 +903,6 @@
     cursor: pointer;
 }
 
-.scan-config__actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 4px;
-}
-
 /* 扫描/解析进行中 */
 .scan-loading {
     display: flex;
@@ -962,21 +954,11 @@
     font-size: 13px;
 }
 
-.scan-results__scroll {
-    flex: 1;
-    min-height: 0;
-}
-
-.scan-results__scroll-view {
-    width: 100%;
-    height: 100%;
-}
-
 .scan-results__list {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    padding: 4px 4px 8px;
+    padding: 0 4px;
 }
 
 .scan-result-item {
@@ -1027,21 +1009,6 @@
 
 .scan-result-item__remove:active {
     transform: scale(0.94);
-}
-
-.scan-results__footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    padding: 12px 4px 0;
-    flex-shrink: 0;
-}
-
-/* 结果阶段：列表在弹窗内独立滚动，底部「取消 / 确认导入」固定不随内容滚动。
-   扫描弹窗自带滚动管理（.scan-results__scroll）→ Modal 的滚动视口在这里只作透明包裹：
-   不溢层 ⇒ 自定义滑块永不出现（flex 列与 min-height 已由 .modal-content / .modal-scroll-view 内建）。 */
-.scan-modal-wrap .modal-scroll-view {
-    overflow: visible;
 }
 
 /* ===== 播放队列浮层外壳（原 layout/queue.css；行在 song-list.css） ===== */

@@ -6,7 +6,6 @@ import { Modal } from '@renderer/components/ui/Modal'
 import { idList, rlog } from '@renderer/lib/log'
 import { message } from '@renderer/lib/message'
 import { importFeedback } from '@renderer/features/song/songActions'
-import { ScrollArea } from '@renderer/components/ui/ScrollArea'
 import { Checkbox } from '@renderer/components/ui/Checkbox'
 import { listDir, selectDirectory, getFileInfo } from '@renderer/lib/file'
 import { parseAudioMetadata } from '@renderer/lib/audio'
@@ -230,6 +229,39 @@ export function ScanDirectoryModal({ open, onOpenChange, onImported }: ScanDirec
         abortScan()
     }, [abortScan])
 
+    const footer = isScanning ? (
+        <button className="scan-config__btn scan-config__btn--ghost" type="button" onClick={cancelScan}>
+            取消扫描
+        </button>
+    ) : scanned.length === 0 ? (
+        <>
+            <button className="scan-config__btn scan-config__btn--ghost" type="button" onClick={handleClose}>
+                取消
+            </button>
+            <button
+                className="scan-config__btn scan-config__btn--primary"
+                type="button"
+                onClick={() => void executeScan()}
+                disabled={!rootDir}
+            >
+                开始扫描
+            </button>
+        </>
+    ) : (
+        <>
+            <button className="scan-config__btn scan-config__btn--ghost" type="button" onClick={handleClose}>
+                取消
+            </button>
+            <button
+                className="scan-config__btn scan-config__btn--primary"
+                type="button"
+                onClick={() => void confirmImport()}
+            >
+                确认导入 ({scanned.length})
+            </button>
+        </>
+    )
+
     return (
         <Modal
             open={open}
@@ -237,8 +269,8 @@ export function ScanDirectoryModal({ open, onOpenChange, onImported }: ScanDirec
                 if (!o) handleClose()
             }}
             title="扫描本地音乐"
-            className="scan-modal-wrap"
             contentStyle={{ width: 700, height: 500 }}
+            footer={footer}
         >
             <div className="scan-modal">
                 {scanned.length === 0 && !isScanning ? (
@@ -270,19 +302,6 @@ export function ScanDirectoryModal({ open, onOpenChange, onImported }: ScanDirec
                                 <span>过滤 60s 以下的音频</span>
                             </label>
                         </div>
-                        <div className="scan-config__actions">
-                            <button
-                                className="scan-config__btn scan-config__btn--primary"
-                                type="button"
-                                onClick={() => void executeScan()}
-                                disabled={!rootDir}
-                            >
-                                开始扫描
-                            </button>
-                            <button className="scan-config__btn scan-config__btn--ghost" type="button" onClick={handleClose}>
-                                取消
-                            </button>
-                        </div>
                     </div>
                 ) : isScanning ? (
                     <div className="scan-loading">
@@ -291,9 +310,6 @@ export function ScanDirectoryModal({ open, onOpenChange, onImported }: ScanDirec
                         <p className="scan-loading__progress">
                             已扫描 {dirCount} 个目录，发现 {fileCount} 个音频文件
                         </p>
-                        <button className="scan-config__btn scan-config__btn--ghost" type="button" onClick={cancelScan}>
-                            取消扫描
-                        </button>
                     </div>
                 ) : (
                     <div className="scan-results">
@@ -301,19 +317,6 @@ export function ScanDirectoryModal({ open, onOpenChange, onImported }: ScanDirec
                             <span className="scan-results__count">找到 {scanned.length} 首歌曲</span>
                         </div>
                         <ScanResultList songs={scanned} onRemove={removeScanned} />
-                        <div className="scan-results__footer">
-                            <button className="scan-config__btn scan-config__btn--ghost" type="button" onClick={handleClose}>
-                                取消
-                            </button>
-                            <button
-                                className="scan-config__btn scan-config__btn--primary"
-                                type="button"
-                                onClick={() => void confirmImport()}
-                                disabled={scanned.length === 0}
-                            >
-                                确认导入 ({scanned.length})
-                            </button>
-                        </div>
                     </div>
                 )}
             </div>
@@ -323,40 +326,33 @@ export function ScanDirectoryModal({ open, onOpenChange, onImported }: ScanDirec
 
 function ScanResultList({ songs, onRemove }: { songs: ScannedSong[]; onRemove: (i: number) => void }) {
     return (
-        <ScrollArea
-            className="scan-results__scroll"
-            scrollClassName="scan-results__scroll-view"
-            thumbClassName="scan-results__scroll-thumb"
-            deps={[songs]}
-        >
-            <div className="scan-results__list">
-                {songs.map((s, index) => (
-                    <div className="scan-result-item" key={s.filePath}>
-                        <div className="scan-result-item__info">
-                            <div className="scan-result-item__name ellipsis" title={s.name}>
-                                {s.name}
-                            </div>
-                            <div className="scan-result-item__meta">
-                                <span>{s.singer}</span>
-                                {s.album ? <span> · {s.album}</span> : null}
-                                <span> · {formatPlayTime(s.duration)}</span>
-                            </div>
-                            <div className="scan-result-item__path ellipsis" title={s.filePath}>
-                                {s.filePath}
-                                {s.size ? ` · ${formatSize(s.size)}` : ''}
-                            </div>
+        <div className="scan-results__list">
+            {songs.map((s, index) => (
+                <div className="scan-result-item" key={s.filePath}>
+                    <div className="scan-result-item__info">
+                        <div className="scan-result-item__name ellipsis" title={s.name}>
+                            {s.name}
                         </div>
-                        <button
-                            className="scan-result-item__remove"
-                            type="button"
-                            title="移除"
-                            onClick={() => onRemove(index)}
-                        >
-                            <Icon name="x" size={14} />
-                        </button>
+                        <div className="scan-result-item__meta">
+                            <span>{s.singer}</span>
+                            {s.album ? <span> · {s.album}</span> : null}
+                            <span> · {formatPlayTime(s.duration)}</span>
+                        </div>
+                        <div className="scan-result-item__path ellipsis" title={s.filePath}>
+                            {s.filePath}
+                            {s.size ? ` · ${formatSize(s.size)}` : ''}
+                        </div>
                     </div>
-                ))}
-            </div>
-        </ScrollArea>
+                    <button
+                        className="scan-result-item__remove"
+                        type="button"
+                        title="移除"
+                        onClick={() => onRemove(index)}
+                    >
+                        <Icon name="x" size={14} />
+                    </button>
+                </div>
+            ))}
+        </div>
     )
 }
