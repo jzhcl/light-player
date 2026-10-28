@@ -2,6 +2,7 @@ import { usePluginStore } from '@renderer/store'
 import type { OpenViewOutcome } from '@renderer/store/pluginStore'
 import { isOk } from '@shared/result'
 import { message } from '@renderer/lib/message'
+import { rlog } from '@renderer/lib/log'
 import { LIKED_PLAYLIST_ID, LIKED_PLAYLIST_NAME } from '@renderer/lib/constants'
 import { getAllPlaylists } from '@renderer/lib/db'
 import { toFileUrl } from '@renderer/lib/utils'
@@ -292,7 +293,7 @@ async function handleSdkInvoke(
             case 'song:create': {
                 const created = await createSongFromPlugin(args[0] as LP.Plugin.Song)
                 if (!isOk(created)) error = created.error
-                else result = created.value.id
+                else result = { id: created.value.id }
                 break
             }
             case 'song:update': {
@@ -322,7 +323,10 @@ async function handleSdkInvoke(
                 const id = `${data.pluginId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
                 const r = await createPlaylist({ ...data, id } as Omit<LP.Playlist, 'createdAt' | 'updatedAt'>)
                 if (!isOk(r)) error = r.error
-                else result = { id: r.value }
+                else {
+                    result = { id: r.value }
+                    rlog.info(`[plugin-sdk] ${pluginId} 创建歌单 ${r.value}（${data.name}）`)
+                }
                 break
             }
             case 'playlist:delete': {
@@ -368,5 +372,7 @@ async function handleSdkInvoke(
     } catch (e) {
         error = e instanceof Error ? e.message : String(e)
     }
+    // 插件通过 SDK 调渲染侧失败时，原因只留在这里
+    if (error) rlog.warn(`[plugin-sdk] ${pluginId}.${action} 失败：${error}`)
     await window.api.invoke('plugin:sdk-invoke-reply', { requestId, result, error })
 }
