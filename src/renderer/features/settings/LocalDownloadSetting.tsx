@@ -3,7 +3,7 @@ import { Checkbox } from '@renderer/components/ui/Checkbox'
 import { Select } from '@renderer/components/ui/Select'
 import { useSettingsStore } from '@renderer/store'
 import { deleteFile, ensureDir, listDir, openDirInExplorer, selectDirectory } from '@renderer/lib/file'
-import { invalidatePicCache } from '@renderer/features/song/songPicCache'
+import { rebuildSongPics, sweepSongPics } from '@renderer/features/song/songPicCache'
 import { clearUnusedPlaylistPics } from '@renderer/features/playlist/playlistPic'
 import { FILE_NAME_FORMATS, renderFileName, type FileNameFormat } from '@renderer/lib/fileNameFormat'
 import { CHECK_INTERVALS, type LocalFileCheckInterval } from '@renderer/lib/localFileCheck'
@@ -159,6 +159,16 @@ export function LocalDownloadSetting() {
                     failed += r.failed
                     continue
                 }
+                // 歌曲图片，删掉没被引用的（换封面 / 重解析留下的旧图、0 字节残骸），
+                // 重建「记录里有路径、盘上文件却没了」的那几首。健康缓存上零删除、零重建。
+                if (c.id === 'SongPic') {
+                    const r = await sweepSongPics()
+                    deleted += r.deleted
+                    failed += r.failed
+                    if (r.dangling.length > 0) void rebuildSongPics(r.dangling)
+                    continue
+                }
+                // 其余分类（暂无）：整目录清空
                 const r = await listDir(join(cacheDir, c.id))
                 if (!isOk(r)) continue
                 for (const f of r.value.filter((x) => x.type === 'file')) {
@@ -166,10 +176,6 @@ export function LocalDownloadSetting() {
                     if (isOk(del)) deleted++
                     else failed++
                 }
-            }
-            // 歌曲图片缓存被清 → 触发重建
-            if (picked.some((c) => c.id === 'SongPic')) {
-                void invalidatePicCache()
             }
             await scanCache()
         } finally {
@@ -181,10 +187,10 @@ export function LocalDownloadSetting() {
         if (failed > 0) rlog.warn(`[cache] 清除缓存 ${scope}：删除 ${deleted} 个，失败 ${failed} 个`)
         else rlog.info(`[cache] 清除缓存 ${scope}：删除 ${deleted} 个`)
 
-        if (deleted === 0 && failed === 0) message.info('没有可清除的缓存')
-        else if (failed === 0) message.success(`已清除 ${deleted} 个缓存文件`)
+        if (deleted === 0 && failed === 0) message.info('缓存都在使用中，没有可清理的文件')
+        else if (failed === 0) message.success(`已清理 ${deleted} 个无用缓存文件`)
         else if (deleted === 0) message.error(`清除缓存失败：${failed} 个文件未能删除`)
-        else message.warn(`已清除 ${deleted} 个缓存文件，${failed} 个未能删除`)
+        else message.warn(`已清理 ${deleted} 个无用缓存文件，${failed} 个未能删除`)
     }
 
     return (
@@ -334,7 +340,7 @@ export function LocalDownloadSetting() {
                                     ? '正在扫描缓存…'
                                     : categories.length === 0
                                       ? '暂无缓存数据'
-                                      : '勾选要清除的缓存类别，清除后封面会在后台自动重建'}
+                                      : '只回收没被引用的文件，正在使用的会保留；路径还在但文件已丢失的封面会自动重建'}
                             </span>
                             {categories.length > 0 && (
                                 <div className="download-cache-categories">
