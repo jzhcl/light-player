@@ -2,7 +2,8 @@ import { isOk, ok } from '@shared/result'
 import { message } from '@renderer/lib/message'
 import { idList, rlog } from '@renderer/lib/log'
 import { addSongToPlaylist } from '@renderer/features/playlist/playlistService'
-import { cleanupSongIfUnreachable, markSongLike, unmarkSongLike } from './songService'
+import { cleanupSongIfUnreachable } from './songLifecycle'
+import { markSongLike, unmarkSongLike } from './songLike'
 
 /**
  * 歌曲域的常用 / 批量写操作（列表页与右键菜单共用）。

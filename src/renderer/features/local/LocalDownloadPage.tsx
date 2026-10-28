@@ -14,11 +14,9 @@ import { useEvent } from '@renderer/hooks/useEvent'
 import { useSongListPlayback, useSongListRemoval, useSongListSync } from '@renderer/hooks/useSongList'
 import { usePlaylistStore } from '@renderer/store'
 import { player } from '@renderer/features/player/player'
-import {
-    createSongFromLocalFile,
-    deleteSong,
-    updateSong,
-} from '@renderer/features/song/songService'
+import { createSongFromLocalFile } from '@renderer/features/song/songIngest'
+import { deleteSong } from '@renderer/features/song/songLifecycle'
+import { updateSong } from '@renderer/features/song/songWrite'
 import {
     ActionsColumn,
     AlbumColumn,

@@ -1,6 +1,6 @@
 import { getAllSongs } from '@renderer/lib/db'
 import { isOk } from '@shared/result'
-import { updateSong } from '@renderer/features/song/songService'
+import { updateSong } from '@renderer/features/song/songWrite'
 import { cacheSongPicture, parseAudioMetadata } from '@renderer/lib/audio'
 import { downloadImage, imageExtFromUrl } from '@renderer/lib/download'
 import { deleteFile, listDir } from '@renderer/lib/file'

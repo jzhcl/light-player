@@ -140,7 +140,7 @@ export function useSongListSync<T extends { id: string }>({
     useEvent(LP_EVENT['SONG.UPDATED'], (payload) => {
         const p = payload as { id?: string; patch?: Partial<LP.Song> } | undefined
         if (!p?.id || !p.patch) return
-        // payload 契约是 `Partial<LP.Song>`（见 songService.updateSongMeta）
+        // payload 契约是 `Partial<LP.Song>`（见 songWrite.ts 的 updateSong）
         patchRow(p.id, p.patch as Partial<T>)
     })
     useEvent(LP_EVENT['SONG.DELETED'], (payload) => {

@@ -9,7 +9,7 @@ import { useEvent } from '@renderer/hooks/useEvent'
 import { useSongListPlayback, useSongListRemoval, useSongListSync } from '@renderer/hooks/useSongList'
 import { usePlaylistStore } from '@renderer/store'
 import { getPlaylistSongs } from '@renderer/features/playlist/playlistService'
-import { unmarkSongLike } from '@renderer/features/song/songService'
+import { unmarkSongLike } from '@renderer/features/song/songLike'
 import { addSongsTo, applyToSongs, batchFeedback, toggleSongLike } from '@renderer/features/song/songActions'
 import { message } from '@renderer/lib/message'
 import {

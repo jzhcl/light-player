@@ -26,7 +26,7 @@ import {
     deleteDownloadRecordBySongAndQuality,
 } from '@renderer/lib/db/downloadRecord'
 import { getSongById } from '@renderer/lib/db/song'
-import { updateSong } from '@renderer/features/song/songService'
+import { updateSong } from '@renderer/features/song/songWrite'
 
 // 对外保留按 id 查记录的入口
 export { getDownloadRecordById }

@@ -4,7 +4,7 @@ import { isOk } from '@shared/result'
 import { message } from '@renderer/lib/message'
 import { useEvent } from '@renderer/hooks/useEvent'
 import { usePlayerStore } from '@renderer/store'
-import { markSongLike, unmarkSongLike } from './songService'
+import { markSongLike, unmarkSongLike } from './songLike'
 
 /**
  * 当前播放歌曲的「喜欢」状态与切换（底栏与播放页共用）。

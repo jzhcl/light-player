@@ -15,7 +15,7 @@ import {
     markDownloadRecordPaused,
 } from '@renderer/lib/db/downloadRecord'
 import { getSongsByIds, getSongById } from '@renderer/lib/db/song'
-import { updateSong } from '@renderer/features/song/songService'
+import { updateSong } from '@renderer/features/song/songWrite'
 import { recomputeActiveCount, downloadSong } from '@renderer/features/download/downloadService'
 import { idList, rlog } from '@renderer/lib/log'
 import { message } from '@renderer/lib/message'

@@ -1,6 +1,6 @@
 import { useCallback, useState, type DragEvent, type RefObject } from 'react'
 import { isOk } from '@shared/result'
-import { createSongFromLocalFile } from '@renderer/features/song/songService'
+import { createSongFromLocalFile } from '@renderer/features/song/songIngest'
 import { addSongToPlaylist } from './playlistService'
 import { idList, rlog } from '@renderer/lib/log'
 import { message } from '@renderer/lib/message'

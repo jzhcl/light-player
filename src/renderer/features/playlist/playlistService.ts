@@ -10,7 +10,7 @@ import {
     updatePlaylistSongPositions as dbUpdatePlaylistSongPositions,
 } from '@renderer/lib/db'
 import { eventBus, LP_EVENT } from '@renderer/lib/eventBus'
-import { cleanupSongIfUnreachable } from '@renderer/features/song/songService'
+import { cleanupSongIfUnreachable } from '@renderer/features/song/songLifecycle'
 import { usePlaylistStore, useSettingsStore } from '@renderer/store'
 import { rlog } from '@renderer/lib/log'
 import { ok, isOk } from '@shared/result'

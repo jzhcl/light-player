@@ -3,7 +3,7 @@ import { isOk } from '@shared/result'
 import { TOPIC } from '@shared/topic'
 import { invoke } from '@renderer/lib/ipc'
 import { NEXT_MODE, player } from '@renderer/features/player/player'
-import { markSongLike, unmarkSongLike } from '@renderer/features/song/songService'
+import { markSongLike, unmarkSongLike } from '@renderer/features/song/songLike'
 import { usePlayerStore } from '@renderer/store/playerStore'
 import { useSettingsStore } from '@renderer/store/settingsStore'
 

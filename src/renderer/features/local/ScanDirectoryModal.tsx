@@ -9,7 +9,7 @@ import { importFeedback } from '@renderer/features/song/songActions'
 import { Checkbox } from '@renderer/components/ui/Checkbox'
 import { listDir, selectDirectory, getFileInfo } from '@renderer/lib/file'
 import { parseAudioMetadata } from '@renderer/lib/audio'
-import { createSongFromLocalFile } from '@renderer/features/song/songService'
+import { createSongFromLocalFile } from '@renderer/features/song/songIngest'
 import { deriveLocalSongFields } from '@renderer/lib/fileNameFormat'
 
 interface ScannedSong {

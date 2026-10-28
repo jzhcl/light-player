@@ -13,7 +13,7 @@ import { usePluginStore, usePlaylistStore } from '@renderer/store'
 import { songKey, type QueueEntry } from '@renderer/features/song/songKey'
 import { AddToSubMenu, AddToQueueItem, DownloadItem, PlayItem } from '@renderer/features/song/songMenu'
 import { downloadSongs } from '@renderer/features/download/downloadService'
-import { ensureSong } from '@renderer/features/song/songService'
+import { ensureSong } from '@renderer/features/song/songIngest'
 import {
     ActionsColumn,
     AlbumColumn,

@@ -14,13 +14,9 @@ import {
 } from '@renderer/lib/plugin'
 import { goTo } from '@renderer/lib/navigation'
 import type { MessageType } from '@renderer/store/messageStore'
-import {
-    createSongFromPlugin,
-    updateSongFromPlugin,
-    deleteSong,
-    markSongLike,
-    unmarkSongLike,
-} from '@renderer/features/song/songService'
+import { createSongFromPlugin, updateSongFromPlugin } from '@renderer/features/song/songIngest'
+import { deleteSong } from '@renderer/features/song/songLifecycle'
+import { markSongLike, unmarkSongLike } from '@renderer/features/song/songLike'
 import { saveSongLyric } from '@renderer/features/lyrics/songLyricService'
 import {
     createPlaylist,
