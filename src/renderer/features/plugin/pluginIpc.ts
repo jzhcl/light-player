@@ -32,6 +32,23 @@ let initialized = false
 /** 最近一次关闭的来源，随 @closed 广播给插件后端；广播后重置为 user */
 let lastCloseReason: ViewCloseReason = 'user'
 
+/** 插件日志级别 → 渲染端 console 方法 */
+const PLUGIN_CONSOLE_METHOD = {
+    log: 'log',
+    info: 'info',
+    warn: 'warn',
+    error: 'error',
+    debug: 'debug',
+} as const
+
+/** 把插件后端日志打印到控制台 */
+function printPluginLogToDevtools(pluginId: string, level: string, args: string[]): void {
+    const plugin = usePluginStore.getState().plugins.find((p) => p.id === pluginId)
+    const method = PLUGIN_CONSOLE_METHOD[level as keyof typeof PLUGIN_CONSOLE_METHOD] ?? 'log'
+    const print = console[method] as (...data: unknown[]) => void
+    print(`[plugin:${plugin?.name || pluginId}]`, ...args)
+}
+
 /**
  * 从已聚合的 contributions.views 中解析某个插件的视图（含运行时注入的 container / entryUrl）
  */
@@ -105,13 +122,12 @@ export function initPluginIpc(): void {
     })
 
     window.api.on('plugin:console', (payload) => {
-        const { pluginId, level, args: logArgs, timestamp } = (payload as {
+        const { pluginId, level, args: logArgs } = (payload as {
             pluginId: string
             level: string
             args: string[]
-            timestamp: number
         })
-        usePluginStore.getState().appendConsoleLog({ pluginId, level, args: logArgs, timestamp })
+        printPluginLogToDevtools(pluginId, level, logArgs)
     })
 
     window.api.on('plugin:message', (payload) => {

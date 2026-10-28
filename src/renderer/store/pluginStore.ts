@@ -1,13 +1,6 @@
 import { create } from 'zustand'
 
 
-export interface PluginConsoleLog {
-    pluginId: string
-    level: string
-    args: string[]
-    timestamp: number
-}
-
 interface PluginContributions {
     commands: unknown[]
     menus: unknown[]
@@ -48,8 +41,6 @@ interface PluginStore {
     contributions: PluginContributions
     /** 有效命令映射 command → pluginId[] */
     commandMap: Record<string, string[]>
-    /** 插件 console 日志 */
-    consoleLogs: PluginConsoleLog[]
     /** plugin 层当前打开的视图 */
     activeView: ActiveView | null
 
@@ -58,8 +49,6 @@ interface PluginStore {
     setCommandMap: (m: Record<string, string[]>) => void
     upsertPlugin: (p: PluginInfo) => void
     removePlugin: (id: string) => void
-    appendConsoleLog: (log: PluginConsoleLog) => void
-    clearConsoleLogs: () => void
     /**
      * 打开 modal 视图。同步返回判定结果 —— 调用方（pluginIpc）据此回执给插件。
      * settings 视图不走这里（由路由控制）。
@@ -73,13 +62,10 @@ interface PluginStore {
     closeView: (pluginId: string, viewId: string) => boolean
 }
 
-const MAX_CONSOLE_LOGS = 500
-
 export const usePluginStore = create<PluginStore>((set, get) => ({
     plugins: [],
     contributions: { commands: [], menus: [], views: [] },
     commandMap: {},
-    consoleLogs: [],
     activeView: null,
 
     setPlugins: (list) => set({ plugins: list }),
@@ -94,12 +80,6 @@ export const usePluginStore = create<PluginStore>((set, get) => ({
             return { plugins: next }
         }),
     removePlugin: (id) => set((s) => ({ plugins: s.plugins.filter((p) => p.id !== id) })),
-    appendConsoleLog: (log) =>
-        set((s) => {
-            const next = [...s.consoleLogs, log]
-            return { consoleLogs: next.length > MAX_CONSOLE_LOGS ? next.slice(next.length - MAX_CONSOLE_LOGS) : next }
-        }),
-    clearConsoleLogs: () => set({ consoleLogs: [] }),
 
     openView: (pluginId, viewId, options) => {
         const state = get()
