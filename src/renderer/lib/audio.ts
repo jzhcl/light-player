@@ -1,16 +1,6 @@
 import { invokeResult } from './ipc'
-import { createFile } from './file'
-import { generateId, join } from '@shared/utils'
-import { useSettingsStore } from '@renderer/store'
 import { toFileUrl } from './utils'
 
-
-interface AudioPicture {
-    /** 原始图片字节 */
-    data: Uint8Array
-    format: string
-    type: string
-}
 
 /** music-metadata 的内嵌歌词标签（common.lyrics 的条目） */
 interface AudioLyricTag {
@@ -27,7 +17,8 @@ interface AudioMetadata {
         title?: string | null
         artists?: string[]
         album?: string | null
-        picture?: AudioPicture[]
+        /** 内嵌图片数量 */
+        pictureCount?: number
         /** 内嵌歌词（LRC 文本 / 同步歌词） */
         lyrics?: AudioLyricTag[]
     }
@@ -43,7 +34,20 @@ interface AudioMetadata {
 
 /** 解析音频全量元数据 */
 export async function parseAudioMetadata(filePath: string): Promise<Result<AudioMetadata>> {
-    return invokeResult<AudioMetadata>('parseAudioMetadata', filePath)
+    return invokeResult<AudioMetadata>('audio:parseAudioMetadata', filePath)
+}
+
+/**
+ * 抽取音频文件的内嵌封面[0]，写到 `destDir/<baseName>.<ext>`，返回实际写入的路径。
+ *
+ * `null` 表示文件没有内嵌图。
+ */
+export async function extractCoverTo(
+    filePath: string,
+    destDir: string,
+    baseName: string,
+): Promise<Result<string | null>> {
+    return invokeResult<string | null>('audio:extractCover', filePath, destDir, baseName)
 }
 
 /**
@@ -73,6 +77,7 @@ export function parseDurationWithAudio(filePath: string): Promise<number> {
             const duration = audio.duration
             settle(Number.isFinite(duration) && duration > 0 ? Math.floor(duration) : 0)
         }
+
         const onError = () => settle(0)
 
         timer = setTimeout(() => settle(0), 5000)
@@ -80,27 +85,4 @@ export function parseDurationWithAudio(filePath: string): Promise<number> {
         audio.addEventListener('error', onError)
         audio.src = toFileUrl(filePath)
     })
-}
-
-function extFromFormat(format: string): string {
-    const f = (format || '').toLowerCase()
-    if (f.includes('jpeg') || f === 'jpg') return 'jpg'
-    if (f.includes('png')) return 'png'
-    if (f.includes('webp')) return 'webp'
-    if (f.includes('gif')) return 'gif'
-    if (f.includes('bmp')) return 'bmp'
-    const m = f.match(/\.([a-z0-9]+)$/)
-    return m ? m[1] : 'jpg'
-}
-
-/**
- * 将图片原始字节（Uint8Array）写入缓存目录 SongPic/，返回写入后的绝对路径。
- * 路径用 shared/join 拼接，避免 Windows 路径字符串格式问题。
- */
-export async function cacheSongPicture(data: Uint8Array, format: string): Promise<string> {
-    const dir = useSettingsStore.getState().settings['path.cacheDir']
-    const ext = extFromFormat(format)
-    const path = join(dir, 'SongPic', `${generateId('pic')}.${ext}`)
-    await createFile(path, data)
-    return path
 }

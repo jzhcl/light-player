@@ -59,7 +59,16 @@ export function buildLocalSongFields(fields: {
     }
 }
 
-/** 是否需要重新解析封面：URL 变了、或上次没下下来（path 为空） */
+/**
+ * 入库时的封面状态：只记在线地址，不下载。
+ *
+ * `path: ''` 就是「待物化」的标记 —— 三态说明见 `coverPipeline.ts` 顶部。
+ */
+export function pendingPic(picUrl?: string): LP.Song['pic'] {
+    return picUrl ? { url: picUrl, path: '' } : undefined
+}
+
+/** 是否需要重新物化封面：URL 变了，或上次没落成（`path` 为空） */
 export function shouldRefreshPic(picUrl: string | undefined, current?: LP.Song['pic']): boolean {
     return !!picUrl && (picUrl !== current?.url || !current?.path)
 }

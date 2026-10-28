@@ -2,37 +2,21 @@ import { createSong, dbFind, getSongById } from '@renderer/lib/db'
 import { formatDate, formatQuality, formatSize } from '@shared/format'
 import { eventBus, LP_EVENT } from '@renderer/lib/eventBus'
 import { fail, isOk, ok } from '@shared/result'
-import { clone, generateId, join } from '@shared/utils'
+import { clone, generateId } from '@shared/utils'
 import { getFileInfo } from '@renderer/lib/file'
-import { cacheSongPicture, parseAudioMetadata, parseDurationWithAudio } from '@renderer/lib/audio'
-import { downloadImage, imageExtFromUrl } from '@renderer/lib/download'
-import { useSettingsStore } from '@renderer/store'
+import { parseAudioMetadata, parseDurationWithAudio } from '@renderer/lib/audio'
 import { deriveLocalSongFields } from '@renderer/lib/fileNameFormat'
-import { buildLocalSongFields, buildSongPatch, shouldRefreshPic } from './songFields'
+import { buildLocalSongFields, buildSongPatch, pendingPic, shouldRefreshPic } from './songFields'
 import { updateSong } from './songWrite'
+import { enqueueCover } from './coverPipeline'
 
 /**
  * 歌曲入库：把「插件返回的歌曲」或「本地音频文件」变成库里的行。
  *
- * 按自然键查重（插件 = pluginId + pluginSongId；本地 = 'local' + 文件路径），
- * 已存在就走更新而不是插入。
+ *  - 按自然键查重（插件 = pluginId + pluginSongId；本地 = 'local' + 文件路径），
+ *    已存在就走更新而不是插入
+ *  - 创建路径零封面 IO：只写「待物化」状态，落盘交给封面管道
  */
-
-/**
- * 解析插件歌曲封面：下载网络图片到缓存目录 SongPic/，返回 { url, path }。
- * 下载失败则 url 保留、path 留空
- */
-async function resolvePluginSongPic(
-    picUrl?: string,
-): Promise<{ url: string; path: string } | undefined> {
-    if (!picUrl) return undefined
-    const cacheDir = useSettingsStore.getState().settings['path.cacheDir']
-    if (!cacheDir) return { url: picUrl, path: '' }
-    const savePath = join(cacheDir, 'SongPic', `${generateId('pic')}.${imageExtFromUrl(picUrl)}`)
-    const r = await downloadImage(picUrl, savePath)
-    const path = isOk(r) && r.value ? savePath : ''
-    return { url: picUrl, path }
-}
 
 /**
  * 从插件返回的歌曲数据创建 `LP.Song` 并入库。
@@ -66,13 +50,15 @@ export async function createSongFromPlugin(
             meta: clone(pluginSong),
         }
         if (shouldRefreshPic(pluginSong.pic, current.pic)) {
-            patch.pic = await resolvePluginSongPic(pluginSong.pic)
+            patch.pic = pendingPic(pluginSong.pic)
         }
 
         const upd = await updateSong(songId, patch)
         if (!isOk(upd)) return fail(upd.error)
         // 本次只改 patch 内的字段，其余仍是读到的值 → 直接合并返回
-        return ok({ ...current, ...patch })
+        const merged = { ...current, ...patch }
+        enqueueCover(merged)
+        return ok(merged)
     }
 
     const song = {
@@ -85,18 +71,19 @@ export async function createSongFromPlugin(
         createdAt: formatDate(),
         updatedAt: formatDate(),
         ...buildSongPatch(pluginSong),
-        pic: await resolvePluginSongPic(pluginSong.pic),
+        pic: pendingPic(pluginSong.pic),
     } as LP.Song
 
     const r = await createSong(song as Omit<LP.Song, 'createdAt' | 'updatedAt'>)
     if (!isOk(r)) return fail(r.error)
+    enqueueCover(song)
     return ok(song)
 }
 
 /**
  * 用插件返回的（部分）歌曲数据更新已有歌曲。id 为程序内歌曲 id（generateId 生成）。
  * 列字段仅映射插件侧存在的字段，未提供的保持原值；
- * meta 快照按浅合并写回，pic 仅在 URL 变化或缓存缺失时重建。
+ * meta 快照按浅合并写回，pic 仅在 URL 变化或缓存缺失时重新排队物化。
  */
 export async function updateSongFromPlugin(
     programSongId: string,
@@ -112,11 +99,12 @@ export async function updateSongFromPlugin(
     // 本次提供的字段整体替换（不深合并，免得旧对象的残留键混进来），未提供的字段保留。
     mapped.meta = { ...(current.meta ?? {}), ...clone(patch) }
     if (shouldRefreshPic(patch.pic, current.pic)) {
-        mapped.pic = await resolvePluginSongPic(patch.pic)
+        mapped.pic = pendingPic(patch.pic)
     }
 
     const r = await updateSong(programSongId, mapped)
     if (!isOk(r)) return fail(r.error)
+    enqueueCover({ ...current, ...mapped })
     return ok(true)
 }
 
@@ -169,13 +157,9 @@ export async function createSongFromLocalFile(filePath: string): Promise<Result<
     const fileName = (info?.name ?? filePath).replace(/\.[^/.]+$/, '')
     const fields = deriveLocalSongFields(fileName, meta)
 
-    // 4. 图片：从元数据抽取内嵌封面[0] → 渲染端落盘到缓存目录 SongPic/
-    let pic: { url: string; path: string } | undefined
-    const picture = meta.common.picture?.[0]
-    if (picture) {
-        const path = await cacheSongPicture(picture.data, picture.format)
-        pic = { url: '', path }
-    }
+    // 4. 封面：这次解析只告诉该歌曲「有几张内嵌图」，图片字节不出主进程。
+    //    有图 → 标成待物化，由封面管道稍后抽取落盘
+    const pic: LP.Song['pic'] = meta.common.pictureCount ? { url: '', path: '' } : undefined
 
     // 5. 音质与大小
     const qualityType = formatQuality({
@@ -206,5 +190,6 @@ export async function createSongFromLocalFile(filePath: string): Promise<Result<
     const r = await createSong(song as Omit<LP.Song, 'createdAt' | 'updatedAt'>)
     if (!isOk(r)) return fail(r.error)
     eventBus.emit(LP_EVENT['SONG.CREATED'], song)
+    enqueueCover(song)
     return ok(song)
 }

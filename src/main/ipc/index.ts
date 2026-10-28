@@ -7,7 +7,7 @@ import { registerFileHandlers } from './file'
 import { registerHotkeyHandlers } from './hotkey'
 import { registerPluginHandlers } from './plugin'
 import { registerSettingsHandlers } from './settings'
-import { registerOtherHandlers } from './other'
+import { registerAudioHandlers } from './audio'
 import { registerAppHandlers } from './app'
 import { registerTrayHandlers } from './tray'
 import { registerMessageHandlers } from './message'
@@ -23,7 +23,7 @@ export function registerIpcHandlers(ctx: AppContext): void {
     registerHotkeyHandlers(ctx)
     registerPluginHandlers(ctx)
     registerSettingsHandlers(ctx)
-    registerOtherHandlers(ctx)
+    registerAudioHandlers(ctx)
     registerAppHandlers(ctx)
     registerTrayHandlers(ctx)
     registerMessageHandlers()

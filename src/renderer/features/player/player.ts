@@ -4,6 +4,7 @@ import { rlog } from '@renderer/lib/log'
 import { message } from '@renderer/lib/message'
 import { getSongById } from '@renderer/lib/db'
 import { createSongFromPlugin } from '@renderer/features/song/songIngest'
+import { enqueueCover } from '@renderer/features/song/coverPipeline'
 import { recordPlay } from '@renderer/features/song/songPlayedStatsService'
 import { isQueueRef, queueEntryKey, toQueueRef, type QueueEntry } from '@renderer/features/song/songKey'
 import { getSongLink } from '@renderer/features/player/songLinkService'
@@ -123,6 +124,8 @@ async function resolveCurrentSong(): Promise<boolean> {
         if (!r.value) return false
         usePlayerStore.getState().setCurrentSong(r.value)
         usePlayerStore.setState({ duration: r.value.duration })
+        // 正在播的这首封面要马上用（播放页大图 / 桌面歌词），插队物化
+        enqueueCover(r.value, 'high')
         return true
     }
 
@@ -130,6 +133,7 @@ async function resolveCurrentSong(): Promise<boolean> {
     if (!isOk(r)) return false
     usePlayerStore.getState().setCurrentSong(r.value)
     usePlayerStore.setState({ duration: r.value.duration })
+    enqueueCover(r.value, 'high')
     // 收敛成 QueueRef
     const newQueue = queue.slice()
     newQueue[currentIndex] = toQueueRef(r.value)

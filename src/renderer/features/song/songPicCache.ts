@@ -1,47 +1,27 @@
 import { getAllSongs } from '@renderer/lib/db'
-import { isOk } from '@shared/result'
-import { updateSong } from '@renderer/features/song/songWrite'
-import { cacheSongPicture, parseAudioMetadata } from '@renderer/lib/audio'
-import { downloadImage, imageExtFromUrl } from '@renderer/lib/download'
 import { deleteFile, listDir } from '@renderer/lib/file'
-import { generateId, join, normalizePath } from '@shared/utils'
-import { useSettingsStore } from '@renderer/store'
+import { isOk } from '@shared/result'
+import { normalizePath } from '@shared/utils'
 import { rlog } from '@renderer/lib/log'
 import type { FileInfo } from '@shared/types/file'
+import { materializeSongCover, songPicDir } from './coverPipeline'
+import { updateSong } from './songWrite'
 
 /** 重建并发度 */
 const REBUILD_CONCURRENCY = 5
 
-/** 歌曲封面缓存目录：`<cacheDir>/SongPic/` */
-function songPicDir(): string {
-    const cacheDir = useSettingsStore.getState().settings['path.cacheDir']
-    return cacheDir ? join(cacheDir, 'SongPic') : ''
-}
-
 /**
- * 重建单首歌曲的封面缓存：
- *  - 网络歌曲（pic.url 存在）：从 url 经 downloadImage 下载落盘
- *  - 本地歌曲（pluginId='local'）：从音频源文件元数据重新抽取封面[0] 落盘
- *  - 无法重建：清空 pic.path
- * 返回重建后的路径（空串表示无图/失败）。
+ * 重建单首歌曲的封面缓存：物化落盘后写回 `pic`。
+ * 返回重建后的路径（空串表示没重建出来）。
+ *
+ * 落盘复用 `materializeSongCover`（与创建路径同一条物化逻辑），这里只把结果写回歌曲行。
  */
-async function rebuildSongPic(song: LP.Song): Promise<string> {
-    let path = ''
-    if (song.pic?.url) {
-        // 网络歌曲
-        const savePath = join(songPicDir(), `${generateId('pic')}.${imageExtFromUrl(song.pic.url)}`)
-        const r = await downloadImage(song.pic.url, savePath)
-        if (isOk(r) && r.value) path = savePath
-    } else if (song.pluginId === 'local' && song.pluginSongId) {
-        // 本地歌曲：从音频源文件重新抽取内嵌封面[0]（原始 Uint8Array 字节）落盘
-        const metaR = await parseAudioMetadata(song.pluginSongId)
-        if (isOk(metaR) && metaR.value.common.picture?.length) {
-            const pic = metaR.value.common.picture[0]
-            path = await cacheSongPicture(pic.data, pic.format)
-        }
-    }
-
-    await updateSong(song.id, { pic: { url: song.pic?.url ?? '', path } })
+export async function rebuildSongPic(song: LP.Song): Promise<string> {
+    const r = await materializeSongCover(song)
+    // 临时失败：保留原路径不写库 —— 下次清扫还会把它判成悬空、再试一次
+    if (!isOk(r)) return ''
+    const path = r.value ?? ''
+    await updateSong(song.id, path ? { pic: { url: song.pic?.url ?? '', path } } : { pic: undefined })
     return path
 }
 
@@ -55,14 +35,15 @@ interface SongPicSweepResult {
 /**
  * 清扫歌曲图片缓存（回收站式，不是「全删再重建」）。
  *
- * 全在一份快照里算完，只读一次歌曲表 + 一次目录：
+ * 判据全在一份快照里算完，只读一次歌曲表 + 一次目录：
  *  - 目录里没被任何歌曲 `pic.path` 引用 → 删（换封面 / 重新解析 / 已删歌曲留下的旧图）
  *  - 0 字节（上次下载被打断留下的残骸）→ 删
  *  - 被引用但文件已不在 / 刚被删掉 → 记进 `dangling`，由调用方重建
  *
  * 健康缓存上这个操作是零删除、零下载、零写库。
  *
- * ⚠️ 不重建「`pic.path` 为空」的歌：那表示从没缓存过（或本就无图）。
+ * ⚠️ 不碰「`pic.path` 为空」的歌：那是封面管道的待办（待物化）或本就无封面，
+ * 清扫不该抢管道的活。
  */
 export async function sweepSongPics(): Promise<SongPicSweepResult> {
     const out: SongPicSweepResult = { deleted: 0, failed: 0, dangling: [] }
@@ -117,7 +98,6 @@ export async function sweepSongPics(): Promise<SongPicSweepResult> {
 export async function rebuildSongPics(songs: LP.Song[]): Promise<void> {
     if (songs.length === 0) return
 
-    rlog.info(`[cache] 封面重建开始：${songs.length} 首`)
     let empty = 0
     let rejected = 0
     for (let i = 0; i < songs.length; i += REBUILD_CONCURRENCY) {
