@@ -16,6 +16,7 @@ import { enqueueCover } from './coverPipeline'
  *  - 按自然键查重（插件 = pluginId + pluginSongId；本地 = 'local' + 文件路径），
  *    已存在就走更新而不是插入
  *  - 创建路径零封面 IO：只写「待物化」状态，落盘交给封面管道
+ *  - 插入新歌必须发 `SONG.CREATED`（列表页靠它插行）；已存在的歌走 `SONG.UPDATED`
  */
 
 /**
@@ -76,6 +77,7 @@ export async function createSongFromPlugin(
 
     const r = await createSong(song as Omit<LP.Song, 'createdAt' | 'updatedAt'>)
     if (!isOk(r)) return fail(r.error)
+    eventBus.emit(LP_EVENT['SONG.CREATED'], song)
     enqueueCover(song)
     return ok(song)
 }
