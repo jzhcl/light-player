@@ -2,7 +2,7 @@ import { usePlayerStore, useQueueStore, useSettingsStore } from '@renderer/store
 import { isOk } from '@shared/result'
 import { rlog } from '@renderer/lib/log'
 import { message } from '@renderer/lib/message'
-import { getSongById } from '@renderer/lib/db'
+import { getSongById, getSongsByIds } from '@renderer/lib/db'
 import { createSongFromPlugin } from '@renderer/features/song/songIngest'
 import { enqueueCover } from '@renderer/features/song/coverPipeline'
 import { recordPlay } from '@renderer/features/song/songPlayedStatsService'
@@ -109,6 +109,23 @@ function writeQueue(queue: QueueEntry[], currentIndex: number): void {
 // 歌曲解析
 // ---------------------------------------------------------------------------
 
+/** 往后预取几首的封面：连续播放切歌时不会先露占位图 */
+const COVER_PREFETCH_AHEAD = 10
+
+async function prefetchCoverAhead(): Promise<void> {
+    const { queue, currentIndex } = readQueueState()
+    if (currentIndex < 0) return
+    const ids: string[] = []
+    for (let i = currentIndex + 1; i < queue.length && ids.length < COVER_PREFETCH_AHEAD; i++) {
+        const entry = queue[i]
+        if (isQueueRef(entry)) ids.push(entry.id)
+    }
+    if (ids.length === 0) return
+    const r = await getSongsByIds(ids)
+    if (!isOk(r)) return
+    for (const song of r.value) enqueueCover(song)
+}
+
 /**
  * 解析当前索引处的队列项为 LP.Song，写入 playerStore.currentSong。
  * 插件歌曲则先入库（createSongFromPlugin），并把队列项收敛为轻量身份载体（持久化）。
@@ -127,6 +144,7 @@ async function resolveCurrentSong(): Promise<boolean> {
         usePlayerStore.setState({ duration: r.value.duration })
         // 正在播的这首封面要马上用（播放页大图 / 桌面歌词），插队物化
         enqueueCover(r.value, 'high')
+        void prefetchCoverAhead()
         return true
     }
 
@@ -139,6 +157,7 @@ async function resolveCurrentSong(): Promise<boolean> {
     const newQueue = queue.slice()
     newQueue[currentIndex] = toQueueRef(r.value)
     writeQueue(newQueue, currentIndex)
+    void prefetchCoverAhead()
     return true
 }
 

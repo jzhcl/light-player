@@ -74,8 +74,11 @@ const PRIORITY = {
     pluginNormal: 2,
 } as const
 
+/** 在线的封面同时最多排这么多首；本地歌没有 url 兜底，不受此限 */
+const PLUGIN_PENDING_LIMIT = 100
+
 const queue = createTaskQueue({
-    concurrency: 3,
+    concurrency: 5,
     // 入队后静默 400ms = 「批末」：导入 200 首只跑一轮，而不是每首各踢一次
     flushDelayMs: 400,
     maxAttempts: 3,
@@ -113,6 +116,8 @@ export function enqueueCover(song: LP.Song | null | undefined, priority: Priorit
     // 没有 pic = 确实没有封面（终态）；有 path = 已物化。两者都不用排队
     if (!song.pic || song.pic.path) return
     if (!songPicDir()) return // 缓存目录未设置：直接跳过
+    // 在线封面排满了就先不收（在线仍可按 url 显示，只是离线没图）；本地歌与播放中的照收
+    if (song.pic.url && priority !== 'high' && queue.size() >= PLUGIN_PENDING_LIMIT) return
     const weight = weightOf(song, priority)
     queue.enqueue(song.id, () => applyCover(song), weight)
 }
