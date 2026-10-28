@@ -24,6 +24,7 @@ import {
     addSongToPlaylist,
     removeSongFromPlaylist,
 } from '@renderer/features/playlist/playlistService'
+import { ensurePlaylistPic } from '@renderer/features/playlist/playlistPic'
 
 
 let initialized = false
@@ -317,7 +318,16 @@ async function handleSdkInvoke(
             case 'playlist:create': {
                 const data = args[0] as LP.Plugin.Playlist
                 const id = `${data.pluginId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-                const r = await createPlaylist({ ...data, id } as Omit<LP.Playlist, 'createdAt' | 'updatedAt'>)
+                // 插件契约的 pic 是 URL 字符串，走 ensurePlaylistPic 落一份本地副本，失败则保留原值。
+                const pic =
+                    typeof data.pic === 'string' && data.pic
+                        ? (await ensurePlaylistPic({ url: data.pic, path: '' })) ?? data.pic
+                        : data.pic
+                const r = await createPlaylist({
+                    ...data,
+                    id,
+                    pic,
+                } as Omit<LP.Playlist, 'createdAt' | 'updatedAt'>)
                 if (!isOk(r)) error = r.error
                 else {
                     result = { id: r.value }
