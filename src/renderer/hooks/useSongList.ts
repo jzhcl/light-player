@@ -1,6 +1,7 @@
-import { useCallback, type Dispatch, type RefObject, type SetStateAction } from 'react'
+import { useCallback, useEffect, type Dispatch, type RefObject, type SetStateAction } from 'react'
 import { LP_EVENT } from '@shared/event'
 import { useEvent } from '@renderer/hooks/useEvent'
+import { songDeleted } from '@renderer/lib/batchedEvents'
 import { player } from '@renderer/features/player/player'
 import type { QueueEntry } from '@renderer/features/song/songKey'
 
@@ -143,9 +144,7 @@ export function useSongListSync<T extends { id: string }>({
         // payload 契约是 `Partial<LP.Song>`（见 songWrite.ts 的 updateSong）
         patchRow(p.id, p.patch as Partial<T>)
     })
-    useEvent(LP_EVENT['SONG.DELETED'], (payload) => {
-        if (typeof payload === 'string') removeSongs([payload])
-    })
+    useEffect(() => songDeleted.subscribe((ids) => removeSongs(ids)), [removeSongs])
 
     return { patchRow }
 }

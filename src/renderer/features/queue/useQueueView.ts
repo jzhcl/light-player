@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { isOk } from '@shared/result'
-import { LP_EVENT } from '@shared/event'
 import type { PicLike } from '@renderer/components/ui/Cover'
 import { isQueueRef, queueEntryKey, type QueueEntry } from '@renderer/features/song/songKey'
-import { useEvent } from '@renderer/hooks/useEvent'
+import { songDeleted } from '@renderer/lib/batchedEvents'
 import { getSongsByIds } from '@renderer/lib/db'
 
 /** 队列行的展示数据：已落库的 LP.Song 与未落库的插件歌曲归一后的形状 */
@@ -98,17 +97,30 @@ export function useQueueView(queue: readonly QueueEntry[], active = true): Queue
     }, [queue, cache, missing, active])
 
     // 歌曲被删除：把缓存挪进 missing，否则面板会一直显示一个已经播不了的幽灵行
-    useEvent(LP_EVENT['SONG.DELETED'], (payload) => {
-        if (typeof payload !== 'string') return
-        const id = payload
-        setCache((prev) => {
-            if (!prev.has(id)) return prev
-            const next = new Map(prev)
-            next.delete(id)
-            return next
-        })
-        setMissing((prev) => (prev.has(id) ? prev : new Set(prev).add(id)))
-    })
+    useEffect(
+        () =>
+            songDeleted.subscribe((ids) => {
+                setCache((prev) => {
+                    let next: Map<string, LP.Song> | null = null
+                    for (const id of ids) {
+                        if (!prev.has(id)) continue
+                        next ??= new Map(prev)
+                        next!.delete(id)
+                    }
+                    return next ?? prev
+                })
+                setMissing((prev) => {
+                    let next: Set<string> | null = null
+                    for (const id of ids) {
+                        if (prev.has(id)) continue
+                        next ??= new Set(prev)
+                        next!.add(id)
+                    }
+                    return next ?? prev
+                })
+            }),
+        [],
+    )
 
     return useMemo(
         () =>

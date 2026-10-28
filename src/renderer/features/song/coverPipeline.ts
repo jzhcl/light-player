@@ -1,7 +1,7 @@
 import { downloadImage, imageExtFromUrl } from '@renderer/lib/download'
 import { extractCoverTo } from '@renderer/lib/audio'
 import { createTaskQueue } from '@renderer/lib/taskQueue'
-import { eventBus, LP_EVENT } from '@renderer/lib/eventBus'
+import { songDeleted } from '@renderer/lib/batchedEvents'
 import { fail, isOk, ok } from '@shared/result'
 import { generateId, join } from '@shared/utils'
 import { useSettingsStore } from '@renderer/store'
@@ -95,10 +95,11 @@ async function applyCover(song: LP.Song): Promise<Result<unknown>> {
     if (!isOk(r)) return fail(r.error)
     const path = r.value ?? ''
     // 拿到路径 → 写回；确实没有内嵌图 → 置 null（终态，之后不会再被入队）
-    return updateSong(
+    const w = await updateSong(
         song.id,
         path ? { pic: { url: song.pic?.url ?? '', path } } : { pic: undefined },
     )
+    return w
 }
 
 /**
@@ -112,12 +113,13 @@ export function enqueueCover(song: LP.Song | null | undefined, priority: Priorit
     // 没有 pic = 确实没有封面（终态）；有 path = 已物化。两者都不用排队
     if (!song.pic || song.pic.path) return
     if (!songPicDir()) return // 缓存目录未设置：直接跳过
-    queue.enqueue(song.id, () => applyCover(song), weightOf(song, priority))
+    const weight = weightOf(song, priority)
+    queue.enqueue(song.id, () => applyCover(song), weight)
 }
 
-// 歌曲被删 → 立刻出队，避免为已经不存在的行写库
-eventBus.on(LP_EVENT['SONG.DELETED'], (payload) => {
-    if (typeof payload === 'string') queue.cancel(payload)
+// 歌曲被删 → 立刻出队，避免为已经不存在的行写库（聚合流：一次删歌单可能带上百首）
+songDeleted.subscribe((ids) => {
+    for (const id of ids) queue.cancel(id)
 })
 
 // 网络恢复后允许重试：离线期间攒下的「放弃」不该锁死一整个进程生命周期

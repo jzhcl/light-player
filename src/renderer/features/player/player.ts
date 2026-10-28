@@ -20,6 +20,7 @@ import {
 } from '@renderer/features/player/autoSkip'
 import { dedupeEntries, planAdd, planRemove, planReorder } from '@renderer/features/player/queueModel'
 import { eventBus, LP_EVENT } from '@renderer/lib/eventBus'
+import { songDeleted } from '@renderer/lib/batchedEvents'
 import { shuffle } from '@renderer/lib/utils'
 
 
@@ -667,9 +668,7 @@ eventBus.on(LP_EVENT['PLAYER.ERROR'], (...args) => {
 })
 
 // 歌曲从资料库删除（songs 表无记录）：若正在播放该曲则停止媒体，避免继续播已不存在的文件导致 UI 异常。
-eventBus.on(LP_EVENT['SONG.DELETED'], (...args) => {
-    const id = typeof args[0] === 'string' ? args[0] : (args[0] as { id?: string } | undefined)?.id
-    if (!id) return
+songDeleted.subscribe((ids) => {
     const cur = usePlayerStore.getState().currentSong
-    if (cur && cur.id === id) stop()
+    if (cur && ids.includes(cur.id)) stop()
 })

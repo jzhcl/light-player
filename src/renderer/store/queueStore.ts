@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist, type PersistStorage } from 'zustand/middleware'
 import type { QueueEntry } from '@renderer/features/song/songKey'
 import { planDropSong } from '@renderer/features/player/queueModel'
-import { eventBus, LP_EVENT } from '@renderer/lib/eventBus'
+import { songDeleted } from '@renderer/lib/batchedEvents'
 
 /**
  * 播放队列的 store
@@ -152,10 +152,15 @@ export const useQueueStore = create<QueueStoreState>()(
 )
 
 /** 歌曲被删除时摘掉队列里指向它的全部条目，并重算 currentIndex */
-eventBus.on(LP_EVENT['SONG.DELETED'], (payload) => {
-    const id = typeof payload === 'string' ? payload : (payload as { id?: string } | undefined)?.id
-    if (!id) return
-    const { queue, currentIndex } = useQueueStore.getState()
-    const plan = planDropSong(queue, currentIndex, id)
-    if (plan) useQueueStore.getState().setQueue(plan.queue, plan.currentIndex)
+songDeleted.subscribe((ids) => {
+    let { queue, currentIndex } = useQueueStore.getState()
+    let changed = false
+    for (const id of ids) {
+        const plan = planDropSong(queue, currentIndex, id)
+        if (!plan) continue
+        queue = plan.queue
+        currentIndex = plan.currentIndex
+        changed = true
+    }
+    if (changed) useQueueStore.getState().setQueue(queue, currentIndex)
 })
