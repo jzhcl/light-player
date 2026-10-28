@@ -12,12 +12,38 @@ import {
 } from 'node:fs'
 import { access } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
+import { app } from 'electron'
 import type { FileEncoding, FileInfo } from '@shared/types/file'
 import { log } from '@main/log'
 
 /** 内容的字节数 */
 const sizeOf = (content: string | Uint8Array): number =>
     typeof content === 'string' ? Buffer.byteLength(content, 'utf8') : content.byteLength
+
+/**
+ * 应用自身数据目录的归一化前缀（惰性求值：模块加载时 app 可能尚未 ready）
+ */
+let userDataPrefix: string | null = null
+
+const normalize = (p: string): string => p.replace(/\\/g, '/').toLowerCase()
+
+/**
+ * 路径是否落在应用的 userData 里（缓存 / DB / 日志 / 插件都在这里）。
+ */
+function isInternalPath(path: string): boolean {
+    userDataPrefix ??= normalize(app.getPath('userData'))
+    const n = normalize(path)
+    return n === userDataPrefix || n.startsWith(`${userDataPrefix}/`)
+}
+
+/**
+ * 文件操作审计日志。
+ *
+ * 意义是给「写到用户地盘」留痕
+ */
+function audit(path: string, text: string): void {
+    if (!isInternalPath(path)) log.info(text)
+}
 
 /** 磁盘上现有文件的字节数：不存在或读不到按 0 算 */
 const sizeOnDisk = (path: string): number => {
@@ -51,7 +77,7 @@ export function ensureDir(dir: string): void {
     } catch (err) {
         throw new Error(`创建目录失败: ${dir} (${(err as Error).message})`)
     }
-    log.info(`[file] 创建目录 ${dir}`)
+    audit(dir, `[file] 创建目录 ${dir}`)
 }
 
 /** 读取文本文件 */
@@ -78,7 +104,7 @@ export function writeFile(path: string, content: string | Uint8Array, encoding: 
         throw new Error(`写入文件失败: ${path} (${(err as Error).message})`)
     }
     const overwritten = before > 0 ? `, 覆盖 ${before} B` : ''
-    log.info(`[file] 写入文件 ${path} (${sizeOf(content)} B${overwritten})`)
+    audit(path, `[file] 写入文件 ${path} (${sizeOf(content)} B${overwritten})`)
 }
 
 /** 创建文件：已存在则不做操作；不存在则创建。content 默认空字符串，encoding 默认 utf-8。 */
@@ -94,7 +120,7 @@ export function createFile(path: string, content: string | Uint8Array = '', enco
     } catch (err) {
         throw new Error(`创建文件失败: ${path} (${(err as Error).message})`)
     }
-    log.info(`[file] 创建文件 ${path} (${sizeOf(content)} B)`)
+    audit(path, `[file] 创建文件 ${path} (${sizeOf(content)} B)`)
 }
 
 /** 删除文件。不存在视为已删除；权限/占用等错误 throw。 */
@@ -105,7 +131,7 @@ export function deleteFile(path: string): void {
     } catch (err) {
         throw new Error(`删除文件失败: ${path} (${(err as Error).message})`)
     }
-    log.info(`[file] 删除文件 ${path}`)
+    audit(path, `[file] 删除文件 ${path}`)
 }
 
 /** 递归删除目录（含内容）。不存在视为成功；权限/占用等错误 throw。 */
@@ -116,7 +142,7 @@ export function deleteDirectory(dir: string): void {
     } catch (err) {
         throw new Error(`删除目录失败: ${dir} (${(err as Error).message})`)
     }
-    log.info(`[file] 删除目录 ${dir}`)
+    audit(dir, `[file] 删除目录 ${dir}`)
 }
 
 /** 复制文件到 dest，自动创建父目录。 */
@@ -146,7 +172,7 @@ export function moveFile(src: string, dest: string): void {
     } catch (err) {
         throw new Error(`移动文件失败: ${src} -> ${dest} (${(err as Error).message})`)
     }
-    log.info(`[file] 移动 ${src} -> ${dest}`)
+    audit(dest, `[file] 移动 ${src} -> ${dest}`)
 }
 
 /** 获取单个文件/目录信息。路径不存在或不可访问时返回 null。 */
