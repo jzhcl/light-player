@@ -16,6 +16,13 @@ import { NEXT_MODE, player, type QueueEntry } from '@renderer/features/player/pl
 import { describeQualityGap, displayQuality } from '@renderer/features/player/resolveQuality'
 import { ALL_QUALITIES } from '@renderer/lib/constants'
 import { rlog } from '@renderer/lib/log'
+import { message } from '@renderer/lib/message'
+
+/** 选到这些档位时提醒一句：普通音频输出下更高音质的收益有限、更耗流量 */
+const HIGH_QUALITY_TIP = new Set<Quality>(['Hi-Res', 'Master'])
+
+/** 该提醒只弹一次 */
+let highQualityTipShown = false
 
 
 /**
@@ -61,6 +68,10 @@ function QualityPanel() {
             useSettingsStore.getState().setSetting('player.preferredQuality', quality)
             rlog.info(`[player] 控制栏切换首选音质 ${preferred} → ${quality}`)
             await player.reload()
+            if (HIGH_QUALITY_TIP.has(quality) && !highQualityTipShown) {
+                highQualityTipShown = true
+                message.info('较高音质的听感提升有限，还会更耗流量，建议选择SQ及以下的音质', 5000)
+            }
         } finally {
             busyRef.current = false
             setSwitching(null)

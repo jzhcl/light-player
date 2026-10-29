@@ -156,6 +156,10 @@ export function GeneralSetting() {
                             <span className="settings-item-hint">
                                 歌曲没有这一档时自动取最接近的一档，在线取不到链接时会改播本地已下载的文件
                             </span>
+                            <span className="settings-item-hint">
+                                LightPlayer 使用普通音频输出，不是专业音频设备：音质选得越高，听感提升越有限，
+                                反而更占网络流量，建议不要选得太高
+                            </span>
                         </div>
                         <div className="settings-item-action">
                             <Select
