@@ -118,13 +118,16 @@ export function createPluginHost(): PluginHostApi {
     /**
      * 插件 console 日志转发：写主进程日志（带插件前缀）+ 推送 plugin:console 到渲染进程（插件控制台面板）。
      * 插件内调用 console.log / console.debug 等最终落到这里。
+     * debug 只进日志文件。
      */
     function forwardConsole(level: string, pluginId: string, args: unknown[]): void {
         const line = `[plugin:${pluginId}] ${args.map(safeStringify).join(' ')}`
         if (level === 'error') log.error(line)
         else if (level === 'warn') log.warn(line)
-        else if (level === 'debug') log.debug(line)
-        else log.info(line)
+        else if (level === 'debug') {
+            log.debug(line)
+            return
+        } else log.info(line)
 
         if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.webContents.send('plugin:console', {
