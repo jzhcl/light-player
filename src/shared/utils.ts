@@ -136,7 +136,8 @@ export const clone = <T>(value: T, map = new WeakMap<object, any>()): T => {
  * - 支持 ./ 和 ../
  * - 自动处理多余斜杠
  * - 过滤空字符串路径片段
- * - 不将 '/xxx' 或 'C:\' 当作绝对路径重置（与 path.join 行为一致）
+ * - 不将后续片段里的 '/xxx' 或 'C:\' 当作绝对路径重置（与 path.join 行为一致）
+ * - 但保留第一段的根（'/'、'//'、'C:/'）：绝对路径拼完仍是绝对路径
  * - 返回使用 '/' 分隔的路径（跨平台通用）
  *
  * @param paths 可变数量的路径片段
@@ -147,6 +148,7 @@ export const clone = <T>(value: T, map = new WeakMap<object, any>()): T => {
  * join('a', '../b', './c')      // 'b/c'
  * join('a', '', 'b//c')         // 'a/b/c'
  * join('a', '/not/ignored')     // 'a/not/ignored'
+ * join('/Users', 'me', 'Music') // '/Users/me/Music'
  * join()                        // ''
  * join('a')                     // 'a'
  */
@@ -161,7 +163,12 @@ export function join(...paths: string[]): string {
     // 2. 拼接所有路径片段，用 '/' 连接
     let joined = filtered.join('/');
 
-    // 3. 拆分成片段，过滤掉空（由 // 或开头/结尾导致）
+    // 3. 摘出根前缀再拆分：POSIX 的 '/'、UNC 的 '//'、Windows 盘符 'C:/'。
+    //    根必须保留 —— 只按片段重建会把 '/Users/x/Downloads' 变成相对路径。
+    const root = joined.match(/^(\/\/|[A-Za-z]:\/|\/)/)?.[1] ?? '';
+    if (root) joined = joined.slice(root.length);
+
+    // 4. 拆分成片段，过滤掉空（由 // 或开头/结尾导致）
     const parts = joined.split('/').filter(Boolean);
 
     const stack: string[] = [];
@@ -181,8 +188,8 @@ export function join(...paths: string[]): string {
         }
     }
 
-    // 4. 重新组合为规范化路径
-    return formatPath(stack.join('/'));
+    // 5. 重新组合为规范化路径（根 + 片段）
+    return formatPath(root + stack.join('/'));
 }
 
 /**
@@ -197,6 +204,11 @@ export function join(...paths: string[]): string {
  */
 export function normalizePath(path?: string): string {
     return path ? path.replace(/\\/g, '/').toLowerCase() : '';
+}
+
+/** 是否为绝对路径（POSIX 的 '/'、UNC 的 '//'、Windows 盘符 'C:/'） */
+export function isAbsolutePath(path?: string): boolean {
+    return !!path && /^(\/\/|[A-Za-z]:[\\/]|\/)/.test(path);
 }
 
 /**

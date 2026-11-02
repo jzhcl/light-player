@@ -7,6 +7,7 @@ import { db } from '@main/db'
 import { LP_EVENT } from '@shared/event'
 import { log } from '@main/log'
 import { formatError } from '@shared/result'
+import { isAbsolutePath } from '@shared/utils'
 
 
 /** 主进程 -> 渲染进程的推送通道回调。 */
@@ -201,6 +202,11 @@ export function createDownloadManager(emit?: DownloadEmitter): DownloadManagerAp
     }
 
     const startLib = async (t: InternalTask) => {
+        // 目录前置校验
+        if (!isAbsolutePath(t.directory)) {
+            settle(t, 'failed', `下载目录无效：${t.directory || '(空)'}，请在设置中重新选择下载目录`)
+            return
+        }
         t.status = 'downloading'
         t.error = undefined
         // 主进程状态机同步把 downloading 落库
