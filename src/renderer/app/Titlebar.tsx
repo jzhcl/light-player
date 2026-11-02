@@ -36,6 +36,8 @@ function HistoryButtons() {
 // 标题栏：左=品牌 + 路由前进后退，中=搜索区（与歌曲状态共占一格），右=窗口控制
 export function Titlebar() {
     const { minimize, close } = useWindowControls()
+    // macOS 用原生红绿灯
+    const isMac = window.env.platform === 'darwin'
     const showSongStatus = useSettingsStore((s) => s.settings['appearance.titlebar.showSongStatus'])
     const currentSong = usePlayerStore((s) => s.currentSong)
     const isPlaying = useIsPlaying()
@@ -75,9 +77,10 @@ export function Titlebar() {
     const statusVisible = showSongStatus && searchIdle && !searchHovered
 
     return (
-        <div className="titlebar draggable h-center">
+        <div className={'titlebar draggable h-center' + (isMac ? ' titlebar--mac' : '')}>
             <div className="titlebar-left h-center">
-                <img className="titlebar-logo" src={logoIcon} alt="LightPlayer"/>
+                {/* macOS 不显示 logo */}
+                {!isMac && <img className="titlebar-logo" src={logoIcon} alt="LightPlayer"/>}
                 <HistoryButtons />
             </div>
 
@@ -109,24 +112,26 @@ export function Titlebar() {
                 <SearchBox concealed={showSongStatus && !searchHovered} onIdleChange={handleIdleChange} />
             </div>
 
-            <div className="titlebar-right h-center">
-                <button
-                    className="icon-button no-draggable center"
-                    title="最小化"
-                    aria-label="最小化"
-                    onClick={minimize}
-                >
-                    <Icon name="dash"/>
-                </button>
-                <button
-                    className="icon-button icon-button--danger no-draggable center"
-                    title="关闭"
-                    aria-label="关闭窗口"
-                    onClick={close}
-                >
-                    <Icon name="x"/>
-                </button>
-            </div>
+            {!isMac && (
+                <div className="titlebar-right h-center">
+                    <button
+                        className="icon-button no-draggable center"
+                        title="最小化"
+                        aria-label="最小化"
+                        onClick={minimize}
+                    >
+                        <Icon name="dash"/>
+                    </button>
+                    <button
+                        className="icon-button icon-button--danger no-draggable center"
+                        title="关闭"
+                        aria-label="关闭窗口"
+                        onClick={close}
+                    >
+                        <Icon name="x"/>
+                    </button>
+                </div>
+            )}
         </div>
     )
 }

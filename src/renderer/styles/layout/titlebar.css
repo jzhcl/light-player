@@ -29,6 +29,11 @@
     padding-left: 10.5px;
 }
 
+/* macOS：不显示 logo，左端直接是前进后退 */
+.titlebar--mac .titlebar-left {
+    padding-left: 78px;
+}
+
 .titlebar-center {
     position: absolute;
     left: 50%;

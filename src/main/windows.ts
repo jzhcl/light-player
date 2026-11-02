@@ -41,10 +41,13 @@ function applyBounds(win: BrowserWindow, key: BoundsKey): void {
 
 /**
  * 把窗口当前 bounds 写回设置。窗口已销毁时静默跳过
+ *
+ * 最大化态存 `getNormalBounds()`（放大前的大小）：`getBounds()` 此时是铺满工作区的尺寸，
+ * 存下来下次启动会「铺满工作区但不是最大化态」—— 再点绿钮没有任何反应。
  */
 export function saveBounds(win: BrowserWindow | null, key: BoundsKey): void {
     if (!win || win.isDestroyed()) return
-    const b = win.getBounds()
+    const b = win.isMaximized() ? win.getNormalBounds() : win.getBounds()
     setSetting(key, { width: b.width, height: b.height, x: b.x, y: b.y })
 }
 
@@ -130,8 +133,12 @@ function baseOptions(): Electron.BrowserWindowConstructorOptions {
         minWidth: 900,
         minHeight: 720,
         show: false,
-        frame: false,
-        maximizable: false, // 应用不允许最大化，标题栏也不提供该入口
+        // Windows / Linux 不允许最大化，标题栏也不提供该入口。
+        // ⚠️ macOS 上这个构造参数会被静默忽略，而且一旦传了，之后 setMaximizable 也会被
+        // Electron 内部状态挡住（44.9.3 实测：isMaximizable 恒为 true，setter 变 no-op）。
+        // mac 侧产品决定是「只放开 zoom」—— 所以 darwin 不传，保持系统默认可最大化，
+        // 全屏则建窗后用 setFullScreenable(false) 关掉（见 applyMainWindowChrome）。
+        ...(process.platform === 'darwin' ? {} : { maximizable: false }),
         icon: join(PATHS.getStatic(), 'images', 'logo-icon-round.png'),
         webPreferences: {
             preload: join(__dirname, '../preload/index.js'),
@@ -141,6 +148,36 @@ function baseOptions(): Electron.BrowserWindowConstructorOptions {
             webSecurity: false,
         },
     }
+}
+
+/**
+ * 主窗的窗体装饰（平台差异只在这里分叉，两窗共用部分见 baseOptions）。
+ *
+ * - Windows / Linux：无边框自绘标题栏（`frame: false`），窗口控制按钮由渲染端画。
+ * - macOS：`frame: false` 会让原生红绿灯消失，所以保留 frame 但隐藏标题栏
+ *   （`titleBarStyle: 'hidden'`）—— 红绿灯与系统行为（悬停符号、右键菜单、失活变灰）
+ *   全部原生。红绿灯是压在网页之上的 NSView，渲染端只能靠左侧留白让位。
+ */
+function mainWindowChrome(): Electron.BrowserWindowConstructorOptions {
+    if (process.platform !== 'darwin') return { frame: false }
+    return {
+        titleBarStyle: 'hidden',
+        // 三枚按钮各 12px、间距 8px（共约 52px）：x 靠左 16px；
+        // y = (50 - 12) / 2 = 19，在 50px 标题栏里竖直居中。
+        trafficLightPosition: { x: 16, y: 19 },
+    }
+}
+
+/**
+ * 建窗后要补的窗体约束（Windows 已在构造参数里给足，这里是 macOS 的补偿）。
+ *
+ * 只关全屏（绿钮 -> zoom，不进原生全屏）：与 `attachInputHandlers` 里禁 F11 全屏的规定一致。
+ * 最大化（zoom）在 mac 上是放开的 —— 原生 zoom 只铺满工作区，不隐藏菜单栏/Dock。
+ * 只能建窗后设 —— 见 baseOptions 里关于构造参数失效的说明。
+ */
+function applyMainWindowChrome(win: BrowserWindow): void {
+    if (process.platform !== 'darwin') return
+    win.setFullScreenable(false)
 }
 
 /**
@@ -157,7 +194,12 @@ export function setMainWindowCloseHandler(handler: () => boolean): void {
 }
 
 export function createMainWindow(): BrowserWindow {
-    const win = new BrowserWindow(baseOptions())
+    // mac 上放开 zoom（产品决定）：绿钮 / 双击标题栏 = 铺满工作区，不进原生全屏。
+    // 不传 maximizable / fullScreenable —— 构造参数在 mac 上会被静默忽略，反而会锁死运行时 setter。
+    const win = new BrowserWindow({ ...baseOptions(), ...mainWindowChrome() })
+
+    // 关全屏（构造参数在 mac 上不生效，只能建窗后设）
+    applyMainWindowChrome(win)
 
     // 登记为 topic 层的收件人
     registerTopicWindow(TOPIC.MAIN, win)
