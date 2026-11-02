@@ -188,7 +188,9 @@ export function createTray(ctx: AppContext): Tray | null {
         })
     } else {
         instance.setContextMenu(buildMenu())
-        instance.on('click', () => toggleMainWindow())
+        if (process.platform !== 'darwin') {
+            instance.on('click', () => toggleMainWindow())
+        }
     }
 
     return tray
