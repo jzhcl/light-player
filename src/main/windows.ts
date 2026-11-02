@@ -228,8 +228,9 @@ let onLyricStateChanged: ((open: boolean) => void) | null = null
 
 /** 桌面歌词独立窗（透明、置顶、无边框、不进任务栏） */
 function createLyricWindow(): BrowserWindow {
+    const base = baseOptions()
     const win = new BrowserWindow({
-        ...baseOptions(),
+        ...base,
         width: 1000,
         height: 300,
         minWidth: 200,
@@ -237,6 +238,10 @@ function createLyricWindow(): BrowserWindow {
         frame: false,
         transparent: true,
         skipTaskbar: true,
+        webPreferences: { ...base.webPreferences, backgroundThrottling: false },
+        // panel：NSPanel 自带 CanJoinAllSpaces + FullScreenAuxiliary，是「跟随全屏 Space」的前提
+        // acceptFirstMouse：面板不抢焦点，首次点击要直接落到窗口上（拖拽歌词才不用点两次）。
+        ...(process.platform === 'darwin' ? { type: 'panel', acceptFirstMouse: true } : {}),
         // macOS 会按窗口内容的 alpha 通道算投影：透明窗里只有几个字，
         // 于是每个字周围都被画一圈灰影，看起来像给歌词加了描边。
         ...(process.platform === 'darwin' ? { hasShadow: false } : {}),
@@ -255,8 +260,23 @@ function createLyricWindow(): BrowserWindow {
     // 恢复上次的位置与尺寸
     applyBounds(win, 'desktopLyricWindow.bounds')
 
-    // 置顶层级取 'pop-up-menu'：高于普通置顶窗，但不抢占全屏应用/系统弹窗的层级
-    win.setAlwaysOnTop(true, 'pop-up-menu')
+    // 置顶层级
+    if (process.platform === 'darwin') {
+        // mac 上「一直看得见」是三件事叠出来的，缺一件都会在某些场景消失：
+        //   ① 层级：'screen-saver' 才压得住全屏应用（系统弹窗仍在它之上）；
+        //   ② 跨 Space：默认窗口只属于创建时那个桌面，切过去就没了；
+        //   ③ visibleOnFullScreen：别的 App 进全屏时，浮层要能跟上去。
+        win.setAlwaysOnTop(true, 'screen-saver')
+        win.setVisibleOnAllWorkspaces(true, {
+            visibleOnFullScreen: true,
+            skipTransformProcessType: true,
+        })
+        // 面板窗会作为一条「窗口」出现在 dock 图标的右键菜单里，歌词窗不该出现在那儿
+        win.excludedFromShownWindowsMenu = true
+    } else {
+        // Windows / Linux：高于普通置顶窗，但不抢占全屏应用/系统弹窗的层级
+        win.setAlwaysOnTop(true, 'pop-up-menu')
+    }
 
     attachInputHandlers(win)
     blockDragAreaContextMenu(win)
