@@ -136,7 +136,7 @@ function baseOptions(): Electron.BrowserWindowConstructorOptions {
         // Windows / Linux 不允许最大化，标题栏也不提供该入口。
         // mac 侧决定是「只放开 zoom」 ，保持系统默认可最大化。
         ...(process.platform === 'darwin' ? {} : { maximizable: false }),
-        icon: join(PATHS.getStatic(), 'images', 'logo-icon-round.png'),
+        icon: join(PATHS.getStatic(), 'images', 'logo-icon-square.png'),
         webPreferences: {
             preload: join(__dirname, '../preload/index.js'),
             contextIsolation: true,

@@ -28,7 +28,7 @@ artifactName: ${productName}-${version}-${arch}-setup.${ext}
 win:
   target:
     - nsis
-  icon: src/shared/assets/images/logo-icon-round.png
+  icon: src/shared/assets/images/logo-icon-square.png
 
 nsis:
   # 辅助安装器：没有这一项就没有任何可交互页面，allowToChangeInstallationDirectory 会被直接拒绝

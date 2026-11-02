@@ -22,11 +22,14 @@ import { PATHS } from '@main/constants/paths'
 import { TOPIC } from '@shared/topic'
 import { publishToTopic } from './ipc/message'
 
-/** 托盘主图标 */
-const ICON_RELATIVE_PATH = join('images', 'logo-icon-round.png')
-
 /** 菜单里的播放控制图标目录 */
 const MENU_ICON_DIR = join('images', 'tray')
+
+/** 托盘图标 */
+const ICON_RELATIVE_PATH = join(MENU_ICON_DIR, 'logo.png')
+
+/** 托盘图标逻辑尺寸：Windows 托盘 16px；macOS 菜单栏 20pt */
+const TRAY_ICON_SIZE = process.platform === 'darwin' ? 20 : 16
 
 /** Windows 用自绘菜单；其余平台保留原生托盘菜单（Linux 托盘依赖 setContextMenu 才能响应操作） */
 const USE_CUSTOM_TRAY_MENU = process.platform === 'win32'
@@ -150,19 +153,38 @@ export function getTrayMenuState(): TrayMenuState {
     return state
 }
 
+/**
+ * 构建托盘图标。
+ *
+ * 源图比托盘槽位大得多，`resize()` 出来的位图 scaleFactor 恒为 1，
+ * 在 HiDPI 屏上会被系统再放大一次从而发虚 —— 所以显式给 1x / 2x 两档表示。
+ */
+function createTrayIcon(): NativeImage {
+    const source = nativeImage.createFromPath(join(PATHS.getStatic(), ICON_RELATIVE_PATH))
+    if (source.isEmpty()) return source
+
+    const icon = nativeImage.createEmpty()
+    for (const scaleFactor of [1, 2]) {
+        const size = TRAY_ICON_SIZE * scaleFactor
+        icon.addRepresentation({
+            scaleFactor,
+            buffer: source.resize({ width: size, height: size, quality: 'best' }).toPNG(),
+        })
+    }
+    return icon
+}
+
 /** 创建托盘 */
 export function createTray(ctx: AppContext): Tray | null {
     ctxRef = ctx
-    const iconPath = join(PATHS.getStatic(), ICON_RELATIVE_PATH)
 
     let instance: Tray
     try {
-        const icon = nativeImage.createFromPath(iconPath)
+        const icon = createTrayIcon()
         if (icon.isEmpty()) {
             return null
         }
-        // 托盘图标按 16px 缩放，避免高分辨率 PNG 在小尺寸托盘中被裁切
-        instance = new Tray(icon.resize({ width: 16, height: 16 }))
+        instance = new Tray(icon)
     } catch (err) {
         return null
     }
