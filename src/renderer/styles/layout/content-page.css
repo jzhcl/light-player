@@ -831,6 +831,18 @@
     min-height: 0;
 }
 
+/* 权限提示（macOS TCC 拒绝后「扫完 0 首」必须能解释清楚） */
+.scan-notice {
+    flex-shrink: 0;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
 /* 配置阶段：目录选择 + 过滤选项 */
 .scan-config {
     display: flex;

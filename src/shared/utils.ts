@@ -211,6 +211,11 @@ export function isAbsolutePath(path?: string): boolean {
     return !!path && /^(\/\/|[A-Za-z]:[\\/]|\/)/.test(path);
 }
 
+/** 失败信息是不是「没权限」 */
+export function isPermissionError(message?: string): boolean {
+    return !!message && /EACCES|EPERM|operation not permitted|permission denied/i.test(message);
+}
+
 /**
  * 判定可否安全交给系统默认浏览器打开：仅放行 http/https 绝对地址。
  * 拦截 javascript:/data:/file: 等可被 shell.openExternal 利用的协议。

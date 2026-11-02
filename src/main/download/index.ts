@@ -7,11 +7,21 @@ import { db } from '@main/db'
 import { LP_EVENT } from '@shared/event'
 import { log } from '@main/log'
 import { formatError } from '@shared/result'
-import { isAbsolutePath } from '@shared/utils'
+import { isAbsolutePath, isPermissionError } from '@shared/utils'
 
 
 /** 主进程 -> 渲染进程的推送通道回调。 */
 export type DownloadEmitter = (channel: string, payload: unknown) => void
+
+/** 把「没有权限」的原始 fs 错误换成一句能执行的话 */
+const PERMISSION_HINT =
+    process.platform === 'darwin'
+        ? '没有写入权限：到「系统设置 → 隐私与安全性 → 文件与文件夹」允许 LightPlayer 访问后重试，或换一个下载目录'
+        : '没有写入权限：请确认该目录存在且未被占用，或换一个下载目录'
+
+function friendlyFsError(message: string): string {
+    return isPermissionError(message) ? `${PERMISSION_HINT}（${message}）` : message
+}
 
 export type NewDownloadTask = Omit<
     DownloadTask,
@@ -197,7 +207,7 @@ export function createDownloadManager(emit?: DownloadEmitter): DownloadManagerAp
                 finishTask(t.id)
             },
             onDownloadInterrupted: () => settle(t, 'failed', '下载中断'),
-            onError: (err: Error) => settle(t, 'failed', err.message),
+            onError: (err: Error) => settle(t, 'failed', friendlyFsError(err.message)),
         }
     }
 
@@ -253,7 +263,7 @@ export function createDownloadManager(emit?: DownloadEmitter): DownloadManagerAp
         } catch (err) {
             pendingPauses.delete(t.id)
             t.status = 'failed'
-            t.error = (err as Error).message
+            t.error = friendlyFsError((err as Error).message)
             // 库在派发阶段就抛错（目录不可写 / 文件名非法等），不会走 settle
             log.error(`[download] ${t.filename} 启动下载失败\nurl: ${t.url}\n${formatError(err)}`)
             emitFailed(t)

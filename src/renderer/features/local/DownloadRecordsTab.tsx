@@ -154,6 +154,8 @@ export function DownloadRecordsTab({ onRecordsChanged }: DownloadRecordsTabProps
                 return '失败'
             case 'completed':
                 return '已完成'
+            case 'cancelled':
+                return '已取消'
             default:
                 return st
         }

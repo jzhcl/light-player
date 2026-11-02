@@ -365,6 +365,10 @@
     color: var(--color-text-tertiary);
 }
 
+.dl-status--cancelled {
+    color: var(--color-text-tertiary);
+}
+
 .dl-item__error {
     color: var(--color-danger);
     opacity: 0.85;
@@ -392,6 +396,12 @@
 /* 扫描目录导入 */
 .scan-config__label {
     color: var(--color-text-secondary);
+}
+
+.scan-notice {
+    border-color: var(--color-danger);
+    background-color: var(--color-fill);
+    color: var(--color-danger);
 }
 
 .scan-config__input {

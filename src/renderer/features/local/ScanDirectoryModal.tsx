@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { isOk } from '@shared/result'
+import { isPermissionError } from '@shared/utils'
 import { formatPlayTime, formatSize } from '@shared/format'
 import { Icon } from '@renderer/components/Icon'
 import { Modal } from '@renderer/components/ui/Modal'
@@ -58,6 +59,8 @@ export function ScanDirectoryModal({ open, onOpenChange, onImported }: ScanDirec
     const [phase, setPhase] = useState<'' | 'scanning' | 'parsing'>('')
     const [dirCount, setDirCount] = useState(0)
     const [fileCount, setFileCount] = useState(0)
+    /** 因权限被跳过（读不出内容）的目录数，0 = 没遇到 */
+    const [deniedCount, setDeniedCount] = useState(0)
 
     const cancelledRef = useRef(false)
 
@@ -69,6 +72,7 @@ export function ScanDirectoryModal({ open, onOpenChange, onImported }: ScanDirec
         setPhase('')
         setDirCount(0)
         setFileCount(0)
+        setDeniedCount(0)
     }, [])
 
     const handleClose = useCallback(() => {
@@ -83,22 +87,25 @@ export function ScanDirectoryModal({ open, onOpenChange, onImported }: ScanDirec
     }, [])
 
     const scanDirectoryForAudio = useCallback(
-        async (dirPath: string, minSize: number): Promise<string[]> => {
+        async (dirPath: string, minSize: number): Promise<{ files: string[]; denied: number }> => {
             const results: string[] = []
+            // 读不出来的目录不当「空目录」：macOS 的 TCC 是按目录授权的，
+            // 被拒绝后必须能说出「是没权限」而不是「扫完 0 首」。
+            let denied = 0
             let pending = [dirPath]
             while (pending.length > 0 && !cancelledRef.current) {
                 const batch = pending.splice(0, DIR_CONCURRENCY)
                 const batchResults = await Promise.all(
-                    batch.map(async (cur): Promise<{ dirs: string[]; files: string[] }> => {
-                        if (cancelledRef.current) return { dirs: [], files: [] }
+                    batch.map(async (cur): Promise<{ dirs: string[]; files: string[]; denied: boolean }> => {
+                        if (cancelledRef.current) return { dirs: [], files: [], denied: false }
                         let r
                         try {
                             r = await withTimeout(listDir(cur), 10000)
                         } catch {
                             // 目录无权限 / 读取出错 / 超时：跳过该目录，不阻塞整轮扫描。
-                            return { dirs: [], files: [] }
+                            return { dirs: [], files: [], denied: false }
                         }
-                        if (!isOk(r)) return { dirs: [], files: [] }
+                        if (!isOk(r)) return { dirs: [], files: [], denied: isPermissionError(r.error) }
                         const dirs: string[] = []
                         const files: string[] = []
                         for (const e of r.value) {
@@ -113,17 +120,18 @@ export function ScanDirectoryModal({ open, onOpenChange, onImported }: ScanDirec
                                 files.push(e.path)
                             }
                         }
-                        return { dirs, files }
+                        return { dirs, files, denied: false }
                     }),
                 )
-                for (const { dirs, files } of batchResults) {
+                for (const { dirs, files, denied: d } of batchResults) {
                     pending.push(...dirs)
                     results.push(...files)
+                    if (d) denied++
                 }
                 setDirCount((d) => d + batch.length)
                 setFileCount(results.length)
             }
-            return results
+            return { files: results, denied }
         },
         [],
     )
@@ -169,9 +177,11 @@ export function ScanDirectoryModal({ open, onOpenChange, onImported }: ScanDirec
         cancelledRef.current = false
         setIsScanning(true)
         setScanned([])
+        setDeniedCount(0)
         setPhase('scanning')
         try {
-            const filePaths = await scanDirectoryForAudio(rootDir, filterSmall ? 100 * 1024 : 0)
+            const { files: filePaths, denied } = await scanDirectoryForAudio(rootDir, filterSmall ? 100 * 1024 : 0)
+            setDeniedCount(denied)
             if (cancelledRef.current) {
                 abortScan()
                 return
@@ -273,6 +283,14 @@ export function ScanDirectoryModal({ open, onOpenChange, onImported }: ScanDirec
             footer={footer}
         >
             <div className="scan-modal">
+                {deniedCount > 0 && !isScanning ? (
+                    <div className="scan-notice">
+                        {deniedCount} 个目录无法读取（没有访问权限），已跳过。
+                        {window.env.platform === 'darwin'
+                            ? '到「系统设置 → 隐私与安全性 → 文件与文件夹」中允许 LightPlayer 访问后重新扫描。'
+                            : '请检查目录是否存在、是否正被其他程序占用。'}
+                    </div>
+                ) : null}
                 {scanned.length === 0 && !isScanning ? (
                     <div className="scan-config">
                         <div className="scan-config__row">
