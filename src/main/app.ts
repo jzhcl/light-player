@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog } from 'electron'
 import type { Tray } from 'electron'
+import { join } from 'node:path'
 import {
     closeLyricWindow,
     createMainWindow,
@@ -7,13 +8,14 @@ import {
     setMainWindowCloseHandler,
 } from './windows'
 import { createTray, destroyTray, syncLyricVisible } from './tray'
+import { installApplicationMenu } from './menu'
 import { registerIpcHandlers } from './ipc'
 import { initDatabase } from './db'
 import { getSetting, initSettings } from './settings'
 import { initPluginHost } from './plugin/host'
 import { getUpdateState, initUpdater, isUpdaterQuitting } from './updater'
 import { downloadManager } from './download'
-import { ensureAppDirectories } from '@main/constants/paths'
+import { ensureAppDirectories, PATHS } from '@main/constants/paths'
 import { LP_EVENT } from '@shared/event'
 import { unregisterAllShortcut } from './hotkey'
 import { log } from './log'
@@ -183,6 +185,10 @@ export function bootstrap(): AppContext {
         initSettings()
         initPluginHost()
 
+        if (process.platform === 'darwin' && !app.isPackaged) {
+            void app.dock?.setIcon(join(PATHS.getStatic(), 'images', 'logo-icon-square.png'))
+        }
+
         // 歌词窗开/关：刷新托盘文案 + 广播给主窗渲染端（按钮态 / 同步门控）。
         setLyricStateHandler((open) => {
             syncLyricVisible(open)
@@ -205,6 +211,7 @@ export function bootstrap(): AppContext {
 
         ctx.mainWindow = createMainWindow()
         ctx.tray = createTray(ctx)
+        installApplicationMenu(ctx)
 
         registerIpcHandlers(ctx)
 
@@ -212,13 +219,24 @@ export function bootstrap(): AppContext {
     })
 
     app.on('window-all-closed', () => {
-        if (process.platform !== 'darwin') app.quit()
+        if (closing || process.platform !== 'darwin') app.quit()
+    })
+
+    app.on('before-quit', (e) => {
+        // closing：本次 quit 就是退出流程自己发起的；isUpdaterQuitting：放行更新安装
+        if (closing || isUpdaterQuitting()) return
+        e.preventDefault()
+        requestQuit(ctx)
     })
 
     app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) {
-            ctx.mainWindow = createMainWindow()
+        // 点 dock 图标
+        const w = ctx.mainWindow
+        if (w && !w.isDestroyed()) {
+            showMainWindow(ctx)
+            return
         }
+        ctx.mainWindow = createMainWindow()
     })
 
     // 退出前注销全部全局快捷键
