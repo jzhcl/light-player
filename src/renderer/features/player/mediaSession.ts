@@ -1,6 +1,25 @@
 import { isOk } from '@shared/result'
 import { readFile } from '@renderer/lib/file'
 import { eventBus, LP_EVENT } from '@renderer/lib/eventBus'
+import { player } from '@renderer/features/player/player'
+import { usePlayerStore } from '@renderer/store'
+
+/**
+ * 系统媒体信息（macOS 控制中心「正在播放」/ Windows 任务栏媒体控件）。
+ *
+ * 这里有三个和时序有关的坑，改动前先读完：
+ *
+ * 1. 起播时必须再推一次 metadata。切歌时写 metadata 只是写进 Blink；系统面板真正取值
+ *    是在「有媒体开始播放、媒体会话被激活」那一刻。先写再起播的时序里，Electron 在 macOS
+ *    上只把播放态与时长交给了系统，标题/歌手/封面全丢（表现为控制中心只显示 App 名）。
+ *    所以 SONG_STARTED 时重推一版 —— 此刻会话刚激活，系统会照着这份更新。
+ *
+ * 2. 封面不能挡在文字前面。解析封面要读盘（本地曲）或走网络（插件曲），是异步的；
+ *    等它回来可能已经错过第 1 条那个时机。先写文字，封面回来再补一版（带缓存，重推时直接复用）。
+ *
+ * 3. playbackState 必须显式设置。它默认是 'none'，系统据此渲染播放/暂停按钮；
+ *    不设的话面板上的按钮状态与真实播放态脱节。
+ */
 
 /** MediaSession artwork 仅支持 http/https/data/blob 协议 */
 const ALLOWED_ARTWORK_SCHEMES = /^(https?:|data:|blob:)/i
@@ -40,10 +59,8 @@ async function localPicToDataUrl(path: string): Promise<string | undefined> {
 /**
  * 解析歌曲封面为 MediaSession 可用的 artwork
  * 优先使用在线地址；本地路径则读取文件转成 data URL；无法解析时省略 artwork
- * @param song 歌曲信息
- * @returns artwork 数组，封面不可用时返回 undefined
  */
-async function resolveMediaSessionArtwork(song: LP.Song): Promise<MediaImage[] | undefined> {
+async function resolveArtwork(song: LP.Song): Promise<MediaImage[] | undefined> {
     const url = song.pic?.url || ''
     const path = song.pic?.path || ''
 
@@ -59,35 +76,119 @@ async function resolveMediaSessionArtwork(song: LP.Song): Promise<MediaImage[] |
     return undefined
 }
 
-/** 把当前曲写进系统媒体信息（Windows 走 SMTC，即任务栏/音量键弹层的媒体控件） */
-async function updateSystemMetadata(song: LP.Song): Promise<void> {
+/** 封面缓存：重推 metadata 时不能每次都去读盘 */
+let artworkCache: { key: string; artwork: MediaImage[] | undefined } | null = null
+
+/** 曲目身份：插件曲与本地曲都有 id，缺 id 时退化为「歌名-歌手」 */
+function songKey(song: LP.Song): string {
+    return song.id || `${song.name}-${song.singer}`
+}
+
+/** 写一版 metadata */
+function pushMetadata(song: LP.Song, artwork?: MediaImage[]): void {
     if (!('mediaSession' in navigator)) return
-    navigator.mediaSession.metadata = new MediaMetadata({
-        title: song.name,
-        artist: song.singer,
-        album: song.album,
-        artwork: await resolveMediaSessionArtwork(song),
+    try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: song.name || '',
+            artist: song.singer || '',
+            album: song.album || '',
+            artwork,
+        })
+    } catch {
+        // 个别字段非法（如空 artwork 项）会让整次赋值抛错，吞掉不影响播放
+    }
+}
+
+/** 切歌：先写文字，封面异步补一版 */
+function onSongChanged(raw: unknown): void {
+    const song = raw as LP.Song | null | undefined
+    if (!song?.name) return
+
+    const key = songKey(song)
+    const cached = artworkCache?.key === key ? artworkCache.artwork : undefined
+    pushMetadata(song, cached)
+    if (cached) return
+
+    void (async () => {
+        const artwork = await resolveArtwork(song)
+        // 期间又切歌了：这份封面已经过时，别覆盖新曲的信息
+        const current = usePlayerStore.getState().currentSong
+        if (!current || songKey(current) !== key) return
+        artworkCache = { key, artwork }
+        pushMetadata(song, artwork)
+    })()
+}
+
+/**
+ * 起播：媒体会话此刻才被激活，把 metadata 重推一版。
+ * 封面已在缓存里就直接带上，避免第一帧没封面。
+ */
+function onSongStarted(): void {
+    const song = usePlayerStore.getState().currentSong
+    if (!song) return
+    pushMetadata(song, artworkCache?.key === songKey(song) ? artworkCache.artwork : undefined)
+}
+
+/** 播放态同步给系统面板 */
+function syncPlaybackState(state: PlayState): void {
+    if (!('mediaSession' in navigator)) return
+    navigator.mediaSession.playbackState =
+        state === 'playing' ? 'playing' : state === 'paused' ? 'paused' : 'none'
+}
+
+/** 系统面板上的传输键 */
+function installActionHandlers(): void {
+    const ms = navigator.mediaSession
+    const set = (action: MediaSessionAction, handler: MediaSessionActionHandler | null): void => {
+        try {
+            ms.setActionHandler(action, handler)
+        } catch {
+            // 个别动作在部分平台不支持，注册失败不影响其余
+        }
+    }
+
+    set('play', () => void player.play())
+    set('pause', () => player.pause())
+    set('stop', () => player.stop())
+    set('previoustrack', () => void player.playPrev())
+    set('nexttrack', () => void player.playNext())
+    set('seekto', (details) => {
+        if (typeof details.seekTime === 'number') player.seekTo(details.seekTime)
     })
 }
 
-let unsubscribe: (() => void) | null = null
+/** 取消订阅们的句柄 */
+let disposers: Array<() => void> | null = null
 
 /**
- * 启动系统媒体信息同步：切歌时把当前曲写进 MediaSession metadata。
- * @returns 停止函数，供卸载时调用。
+ * 启动系统媒体信息同步。
+ * @returns 停止函数，供卸载时调用
  */
 export function initMediaSession(): () => void {
-    if (unsubscribe) return () => {}
+    if (disposers) return () => {}
+    if (!('mediaSession' in navigator)) return () => {}
 
-    unsubscribe = eventBus.on(LP_EVENT['PLAYER.SONG_CHANGED'], (...args) => {
-        const song = args[0] as LP.Song | null | undefined
-        // 无歌（如队列清空）不写
-        if (!song?.name) return
-        void updateSystemMetadata(song)
+    installActionHandlers()
+    // 首帧就要正确：会话可能是在「恢复上次歌曲」之后才建立的
+    syncPlaybackState(usePlayerStore.getState().state)
+
+    const offChanged = eventBus.on(LP_EVENT['PLAYER.SONG_CHANGED'], onSongChanged)
+    const offStarted = eventBus.on(LP_EVENT['PLAYER.SONG_STARTED'], onSongStarted)
+    const offStore = usePlayerStore.subscribe((state, prev) => {
+        if (state.state !== prev.state) syncPlaybackState(state.state)
     })
 
+    disposers = [
+        offChanged,
+        offStarted,
+        offStore,
+        () => {
+            artworkCache = null
+        },
+    ]
+
     return () => {
-        unsubscribe?.()
-        unsubscribe = null
+        for (const off of disposers ?? []) off()
+        disposers = null
     }
 }
