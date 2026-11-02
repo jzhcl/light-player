@@ -134,10 +134,7 @@ function baseOptions(): Electron.BrowserWindowConstructorOptions {
         minHeight: 720,
         show: false,
         // Windows / Linux 不允许最大化，标题栏也不提供该入口。
-        // ⚠️ macOS 上这个构造参数会被静默忽略，而且一旦传了，之后 setMaximizable 也会被
-        // Electron 内部状态挡住（44.9.3 实测：isMaximizable 恒为 true，setter 变 no-op）。
-        // mac 侧产品决定是「只放开 zoom」—— 所以 darwin 不传，保持系统默认可最大化，
-        // 全屏则建窗后用 setFullScreenable(false) 关掉（见 applyMainWindowChrome）。
+        // mac 侧决定是「只放开 zoom」 ，保持系统默认可最大化。
         ...(process.platform === 'darwin' ? {} : { maximizable: false }),
         icon: join(PATHS.getStatic(), 'images', 'logo-icon-round.png'),
         webPreferences: {
@@ -155,26 +152,17 @@ function baseOptions(): Electron.BrowserWindowConstructorOptions {
  *
  * - Windows / Linux：无边框自绘标题栏（`frame: false`），窗口控制按钮由渲染端画。
  * - macOS：`frame: false` 会让原生红绿灯消失，所以保留 frame 但隐藏标题栏
- *   （`titleBarStyle: 'hidden'`）—— 红绿灯与系统行为（悬停符号、右键菜单、失活变灰）
- *   全部原生。红绿灯是压在网页之上的 NSView，渲染端只能靠左侧留白让位。
+ *   （`titleBarStyle: 'hidden'`）。
  */
 function mainWindowChrome(): Electron.BrowserWindowConstructorOptions {
     if (process.platform !== 'darwin') return { frame: false }
     return {
         titleBarStyle: 'hidden',
-        // 三枚按钮各 12px、间距 8px（共约 52px）：x 靠左 16px；
-        // y = (50 - 12) / 2 = 19，在 50px 标题栏里竖直居中。
         trafficLightPosition: { x: 16, y: 19 },
     }
 }
 
-/**
- * 建窗后要补的窗体约束（Windows 已在构造参数里给足，这里是 macOS 的补偿）。
- *
- * 只关全屏（绿钮 -> zoom，不进原生全屏）：与 `attachInputHandlers` 里禁 F11 全屏的规定一致。
- * 最大化（zoom）在 mac 上是放开的 —— 原生 zoom 只铺满工作区，不隐藏菜单栏/Dock。
- * 只能建窗后设 —— 见 baseOptions 里关于构造参数失效的说明。
- */
+/** 建窗后要补的窗体约束（Windows 已在构造参数里给足，这里是 macOS 的补偿） */
 function applyMainWindowChrome(win: BrowserWindow): void {
     if (process.platform !== 'darwin') return
     win.setFullScreenable(false)
@@ -194,8 +182,7 @@ export function setMainWindowCloseHandler(handler: () => boolean): void {
 }
 
 export function createMainWindow(): BrowserWindow {
-    // mac 上放开 zoom（产品决定）：绿钮 / 双击标题栏 = 铺满工作区，不进原生全屏。
-    // 不传 maximizable / fullScreenable —— 构造参数在 mac 上会被静默忽略，反而会锁死运行时 setter。
+    // mac 上放开 zoom：绿钮 / 双击标题栏 = 铺满工作区，不进原生全屏
     const win = new BrowserWindow({ ...baseOptions(), ...mainWindowChrome() })
 
     // 关全屏（构造参数在 mac 上不生效，只能建窗后设）
@@ -247,8 +234,12 @@ function createLyricWindow(): BrowserWindow {
         height: 300,
         minWidth: 200,
         minHeight: 100,
+        frame: false,
         transparent: true,
         skipTaskbar: true,
+        // macOS 会按窗口内容的 alpha 通道算投影：透明窗里只有几个字，
+        // 于是每个字周围都被画一圈灰影，看起来像给歌词加了描边。
+        ...(process.platform === 'darwin' ? { hasShadow: false } : {}),
     })
 
     // 登记为 topic 层的收件人
@@ -327,6 +318,20 @@ function isLyricWindowVisible(): boolean {
  */
 export function setLyricWindowDraggable(enabled: boolean): void {
     lyricDrag?.setEnabled(enabled)
+}
+
+/**
+ * 开始歌词窗整窗拖拽（渲染端在歌词区按下时通知）。
+ *
+ * win32 不需要这条 —— 拖拽由窗口消息驱动。
+ */
+export function startLyricMove(): void {
+    lyricDrag?.startMove()
+}
+
+/** 结束歌词窗整窗拖拽（渲染端松手时通知）。 */
+export function stopLyricMove(): void {
+    lyricDrag?.stopMove()
 }
 
 /**

@@ -6,6 +6,8 @@ import {
     closeLyricWindow,
     setLyricWindowDraggable,
     setLyricWindowMouseThrough,
+    startLyricMove,
+    stopLyricMove,
     startLyricResize,
     stopLyricResize,
 } from '../windows'
@@ -53,6 +55,17 @@ export function registerWindowHandlers(ctx: AppContext): void {
     // 桌面歌词窗：开关整窗拖拽。
     ipcMain.handle('desktopLyricWindow:setDraggable', (_e, enabled: boolean) => {
         setLyricWindowDraggable(enabled)
+        return true
+    })
+
+    // 桌面歌词窗：拖拽起止。渲染端只在 macOS 发这两个信号。
+    ipcMain.handle('desktopLyricWindow:startMove', () => {
+        startLyricMove()
+        return true
+    })
+
+    ipcMain.handle('desktopLyricWindow:stopMove', () => {
+        stopLyricMove()
         return true
     })
 

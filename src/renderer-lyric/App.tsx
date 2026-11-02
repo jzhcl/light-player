@@ -4,6 +4,7 @@ import { findLrcLineIndex } from '@renderer/features/lyrics/position'
 import { useLyricChannel } from './useLyricChannel'
 import { useLyricWindowStore } from './store'
 import { useLyricInteraction } from './useLyricInteraction'
+import { useMove } from './useMove'
 import { useResize } from './useResize'
 import { Toolbar } from './components/Toolbar'
 import { LyricView } from './components/LyricView'
@@ -27,6 +28,7 @@ const RESIZE_DIRECTIONS = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'] as const
 export function App() {
     useLyricChannel()
     useResize()
+    useMove()
 
     const song = useLyricWindowStore((s) => s.song)
     const parsed = useLyricWindowStore((s) => s.parsed)
