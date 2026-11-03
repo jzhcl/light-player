@@ -114,6 +114,8 @@ function onSongChanged(raw: unknown): void {
         // 期间又切歌了：这份封面已经过时，别覆盖新曲的信息
         const current = usePlayerStore.getState().currentSong
         if (!current || songKey(current) !== key) return
+        // 解析失败不入缓存：否则这首歌永远不会再尝试解析封面
+        if (!artwork) return
         artworkCache = { key, artwork }
         pushMetadata(song, artwork)
     })()
@@ -177,6 +179,12 @@ export function initMediaSession(): () => void {
     const offStore = usePlayerStore.subscribe((state, prev) => {
         if (state.state !== prev.state) syncPlaybackState(state.state)
     })
+
+    // 启动恢复的那次 SONG_CHANGED 发在本模块订阅之前（恢复在渲染前初始化、本模块在
+    // App 的 useEffect 里），监听器会扑空 —— 封面解析与缓存从此无人建立，起播时
+    // SONG_STARTED 只能推纯文字版 metadata。这里补放一次当前曲。
+    const restored = usePlayerStore.getState().currentSong
+    if (restored?.name) onSongChanged(restored)
 
     disposers = [
         offChanged,
