@@ -139,6 +139,28 @@ export async function updatePlaylistSongPositions(
     )
 }
 
+/**
+ * 打乱歌单内歌曲顺序：一条 SQL 在库里用 RANDOM() 重新分配 `0..n-1` 的 position，
+ * 并 `RETURNING` 回新的「歌曲 → 位置」映射。
+ *
+ * `WITH ... AS MATERIALIZED` 是关键：不物化的话，子查询可能对每行重算 ROW_NUMBER，
+ * 同一个 song_id 会拿到不一致的 pos。
+ */
+export async function shufflePlaylistSongs(
+    playlistId: string,
+): Promise<Result<{ songId: string; position: number }[]>> {
+    return dbQuery<{ songId: string; position: number }>(
+        `WITH shuffled AS MATERIALIZED (SELECT song_id, ROW_NUMBER() OVER (ORDER BY RANDOM()) - 1 AS pos
+                                        FROM playlist_songs
+                                        WHERE playlist_id = ?)
+         UPDATE playlist_songs
+         SET position = (SELECT pos FROM shuffled WHERE shuffled.song_id = playlist_songs.song_id)
+         WHERE playlist_id = ?
+         RETURNING song_id, position`,
+        [playlistId, playlistId],
+    )
+}
+
 export async function createPlaylist(playlist: Omit<LP.Playlist, 'createdAt' | 'updatedAt'>): Promise<Result<boolean>> {
     return dbCreate('playlists', { ...playlist })
 }

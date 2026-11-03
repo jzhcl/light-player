@@ -50,7 +50,8 @@
 /* 共用：描边取消按钮 → 深色下为纯底色按钮 */
 .playlist-edit-cancel,
 .local-download-del-cancel,
-.dl-clear-cancel {
+.dl-clear-cancel,
+.shuffle-confirm-cancel {
     border-color: transparent;
     background-color: var(--color-surface-raised);
     color: var(--color-text-secondary);
@@ -58,7 +59,8 @@
 
 .playlist-edit-cancel:hover,
 .local-download-del-cancel:hover:not(:disabled),
-.dl-clear-cancel:hover:not(:disabled) {
+.dl-clear-cancel:hover:not(:disabled),
+.shuffle-confirm-cancel:hover:not(:disabled) {
     background-color: var(--color-surface-raised-hover);
     color: var(--color-text-primary);
 }
@@ -209,19 +211,26 @@
     color: var(--color-danger);
 }
 
-.playlist-edit-save {
+.playlist-edit-save,
+.shuffle-confirm-ok {
     background-color: var(--color-brand);
     color: var(--color-on-brand);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 6px 16px rgba(var(--color-brand-rgb), 0.24);
 }
 
-.playlist-edit-save:hover:not(:disabled) {
+.playlist-edit-save:hover:not(:disabled),
+.shuffle-confirm-ok:hover:not(:disabled) {
     background-color: rgb(244, 26, 102);
 }
 
 /* 本地与下载页 */
-.local-download-del-text {
+.local-download-del-text,
+.shuffle-confirm-text {
     color: var(--color-text-secondary);
+}
+
+.shuffle-confirm-hint {
+    color: var(--color-text-tertiary);
 }
 
 .local-download-del-check-text {

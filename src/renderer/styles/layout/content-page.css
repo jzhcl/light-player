@@ -327,6 +327,44 @@
     flex-shrink: 0;
 }
 
+/* 打乱顺序确认弹窗 */
+.shuffle-confirm-text {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.shuffle-confirm-hint {
+    margin: 8px 0 0;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.shuffle-confirm-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.shuffle-confirm-cancel,
+.shuffle-confirm-ok {
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.shuffle-confirm-cancel {
+    border-width: 1px;
+    border-style: solid;
+}
+
+.shuffle-confirm-ok {
+    border: none;
+}
+
 /* 拖入外部音频文件时的落点提示：整个列表区给一圈内缩虚线。
    落点就是列表区本身，空态也在其中，故没有额外的覆盖层。 */
 .content-list-wrap.is-drop-active {

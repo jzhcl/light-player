@@ -40,6 +40,8 @@ import { downloadSongs } from '@renderer/features/download/downloadService'
 import { getPlaylistSongs, removeSongFromPlaylist, updatePlaylist } from '@renderer/features/playlist/playlistService'
 import { ensurePlaylistPic, firstSongPic } from '@renderer/features/playlist/playlistPic'
 import { usePlaylistReorder } from '@renderer/features/playlist/usePlaylistReorder'
+import { usePlaylistShuffle } from '@renderer/features/playlist/usePlaylistShuffle'
+import { ShuffleConfirmModal } from '@renderer/features/playlist/ShuffleConfirmModal'
 import { DRAG_REORDER_MAX } from '@renderer/lib/constants'
 import { usePlaylistAutoCover } from '@renderer/features/playlist/usePlaylistAutoCover'
 import { usePlaylistImport } from '@renderer/features/playlist/usePlaylistImport'
@@ -79,6 +81,8 @@ function PlaylistDetail({ playlistId }: { playlistId: string }) {
 
     /** 编辑弹窗的开关 */
     const [editing, setEditing] = useState(false)
+    /** 打乱顺序的确认弹窗开关 */
+    const [shuffleOpen, setShuffleOpen] = useState(false)
 
     /**
      * 播放 / 菜单要读「最新列表」，但不能让列表身份进入行组件的 props：
@@ -208,6 +212,14 @@ function PlaylistDetail({ playlistId }: { playlistId: string }) {
 
     const silentReload = useCallback(() => load({ silent: true }), [load])
 
+    const shuffleOrder = usePlaylistShuffle({
+        playlistId,
+        listRef: songsRef,
+        setSongs,
+        // 回滚用静默重载：列表本来就在屏幕上，没必要为了纠错闪一次加载态
+        reload: silentReload,
+    })
+
     const { dropActive, handleDragOver, handleDragLeave, handleDrop } = usePlaylistImport({
         playlistId,
         listRef: songsRef,
@@ -317,6 +329,15 @@ function PlaylistDetail({ playlistId }: { playlistId: string }) {
                             移到末尾
                         </ContextMenu.Item>
                     </ContextMenu.Sub>
+                    <ContextMenu.Separator/>
+                    {/* 整表操作 */}
+                    <ContextMenu.Item
+                        icon="random"
+                        disabled={songsRef.current.length < 2}
+                        onSelect={() => setShuffleOpen(true)}
+                    >
+                        打乱歌单
+                    </ContextMenu.Item>
                     <ContextMenu.Separator/>
                     <ContextMenu.Item
                         icon="trash"
@@ -467,6 +488,13 @@ function PlaylistDetail({ playlistId }: { playlistId: string }) {
                     </>
                 )}
             </div>
+
+            <ShuffleConfirmModal
+                open={shuffleOpen}
+                onOpenChange={setShuffleOpen}
+                question={`打乱「${playlist.name}」的歌曲顺序？`}
+                onConfirm={shuffleOrder}
+            />
 
             <PlaylistEditModal
                 open={editing}

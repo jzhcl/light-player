@@ -9,6 +9,8 @@ import { useEvent } from '@renderer/hooks/useEvent'
 import { useSongListPlayback, useSongListRemoval, useSongListSync } from '@renderer/hooks/useSongList'
 import { usePlaylistStore } from '@renderer/store'
 import { getPlaylistSongs } from '@renderer/features/playlist/playlistService'
+import { usePlaylistShuffle } from '@renderer/features/playlist/usePlaylistShuffle'
+import { ShuffleConfirmModal } from '@renderer/features/playlist/ShuffleConfirmModal'
 import { unmarkSongLike } from '@renderer/features/song/songLike'
 import { addSongsTo, applyToSongs, batchFeedback, toggleSongLike } from '@renderer/features/song/songActions'
 import { message } from '@renderer/lib/message'
@@ -42,6 +44,8 @@ export function LikedPage() {
     /** 取数失败 ≠ 列表为空：空态要能说清原因并给重试 */
     const [loadError, setLoadError] = useState(false)
     const [selection, setSelection] = useState<Set<string>>(new Set())
+    /** 打乱顺序的确认弹窗开关 */
+    const [shuffleOpen, setShuffleOpen] = useState(false)
     const playlists = usePlaylistStore((s) => s.playlists)
 
     /**
@@ -126,6 +130,14 @@ export function LikedPage() {
 
     const { playAll, playFromRow, activateRow } = useSongListPlayback({ listRef: songsRef, toEntry: toQueueRef })
 
+    // 打乱顺序
+    const shuffleOrder = usePlaylistShuffle({
+        playlistId: LIKED_PLAYLIST_ID,
+        listRef: songsRef,
+        setSongs,
+        reload: load,
+    })
+
     // 喜欢开关
     // 「已移除」这句只在成员型列表里需要 —— 用户看着那行消失，得解释一句
     const toggleLike = useCallback(async (song: LP.Song) => {
@@ -202,6 +214,15 @@ export function LikedPage() {
                         onPickPlaylist={(p) => void addSongsTo(targets, { kind: 'playlist', playlist: p })}
                     />
                     <DownloadItem disabled={!downloadable} qualityOptions={singleQuality} onSelect={(q) => void downloadSongs(targets, q)}/>
+                    <ContextMenu.Separator/>
+                    {/* 整表操作 */}
+                    <ContextMenu.Item
+                        icon="random"
+                        disabled={songsRef.current.length < 2}
+                        onSelect={() => setShuffleOpen(true)}
+                    >
+                        打乱顺序
+                    </ContextMenu.Item>
                     <ContextMenu.Separator/>
                     <ContextMenu.Item
                         icon="heart-break"
@@ -300,6 +321,13 @@ export function LikedPage() {
                     </>
                 )}
             </div>
+
+            <ShuffleConfirmModal
+                open={shuffleOpen}
+                onOpenChange={setShuffleOpen}
+                question="打乱「我喜欢」的歌曲顺序？"
+                onConfirm={shuffleOrder}
+            />
         </div>
     )
 }

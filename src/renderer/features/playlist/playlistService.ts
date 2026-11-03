@@ -6,9 +6,11 @@ import {
     getPlaylistById,
     getPlaylistSongs as dbGetPlaylistSongs,
     removeSongFromPlaylist as dbRemoveSongFromPlaylist,
+    shufflePlaylistSongs as dbShufflePlaylistSongs,
     updatePlaylist as dbUpdatePlaylist,
     updatePlaylistSongPositions as dbUpdatePlaylistSongPositions,
 } from '@renderer/lib/db'
+import { LIKED_PLAYLIST_ID } from '@renderer/lib/constants'
 import { eventBus, LP_EVENT } from '@renderer/lib/eventBus'
 import { cleanupSongIfUnreachable } from '@renderer/features/song/songLifecycle'
 import { usePlaylistStore, useSettingsStore } from '@renderer/store'
@@ -182,5 +184,27 @@ export async function updatePlaylistSongPositions(
     const r = await dbUpdatePlaylistSongPositions(playlistId, songIds, range)
     if (!isOk(r)) return r
     eventBus.emit(LP_EVENT['PLAYLIST.SONG_POSITIONS_UPDATED'], { playlistId, songIds })
+    return r
+}
+
+/** 日志用：歌单显示名（「我喜欢」不在 store 里，单独标注） */
+function playlistLabel(playlistId: string): string {
+    if (playlistId === LIKED_PLAYLIST_ID) return '我喜欢'
+    return usePlaylistStore.getState().playlists.find((p) => p.id === playlistId)?.name ?? '(未知歌单)'
+}
+
+/**
+ * 打乱歌单内歌曲顺序
+ *
+ * 不 emit `PLAYLIST.SONG_POSITIONS_UPDATED`：该事件目前没有监听者，打乱也只有一个触发源。
+ */
+export async function shufflePlaylistSongs(playlistId: string) {
+    const r = await dbShufflePlaylistSongs(playlistId)
+    const label = playlistLabel(playlistId)
+    if (!isOk(r)) {
+        rlog.error(`[playlist] 打乱歌单「${label}」(${playlistId}) 失败：${r.error}`)
+        return r
+    }
+    rlog.info(`[playlist] 打乱歌单「${label}」(${playlistId})：重排 ${r.value.length} 首`)
     return r
 }
