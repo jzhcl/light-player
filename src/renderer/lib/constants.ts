@@ -58,3 +58,18 @@ export const DRAG_REORDER_MAX = 500
 
 /** 音质选项顺序（由低到高），设置页下拉使用。 */
 export const QUALITY_OPTIONS: Quality[] = ['Standard', 'HQ', 'SQ', 'Hi-Res', 'Master']
+
+// ---------------------------------------------------------------------------
+// 平台
+// ---------------------------------------------------------------------------
+
+/**
+ * `navigator.platform` 在 Electron 里取值稳定：`MacIntel` / `Win32` / `Linux x86_64`。
+ * 渲染进程拿不到 `process.platform`（没有 node 集成），这是唯一可靠的来源。
+ */
+const PLATFORM_HINT =
+    typeof navigator === 'undefined' ? '' : navigator.platform || navigator.userAgent
+
+export const IS_MAC = /mac/i.test(PLATFORM_HINT)
+
+export const IS_WINDOWS = /win/i.test(PLATFORM_HINT)

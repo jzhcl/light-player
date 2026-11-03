@@ -14,6 +14,7 @@ import { initMediaSession } from '@renderer/features/player/mediaSession'
 import { useLyricSync } from '@renderer/features/desktopLyric/useLyricSync'
 import { UpdateHost } from '@renderer/features/update/UpdateHost'
 import { useTraySync } from '@renderer/hooks/useTraySync'
+import { useTrayLyric } from '@renderer/hooks/useTrayLyric'
 import { PlayOverlay } from '@renderer/features/player/PlayOverlay'
 import { Control } from './Control'
 import { Navbar } from './Navbar'
@@ -49,6 +50,8 @@ export function App() {
     useEffect(() => initMediaSession(), [])
     // 托盘：上报播放态/当前曲，并接收托盘的播放控制命令
     useTraySync()
+    // 菜单栏歌词：把当前行 + 逐字进度推给主进程（macOS 菜单栏显示用）
+    useTrayLyric()
     // 桌面歌词窗：仅在歌词窗可见时同步歌词/播放态/进度，并接收它的控制命令
     useLyricSync()
 

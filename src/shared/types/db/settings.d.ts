@@ -195,6 +195,13 @@ declare namespace LP {
         'appearance.motion.enabled': boolean
 
         /**
+         * 是否在 macOS 菜单栏显示当前歌词（含逐字高亮）。
+         * 仅 macOS 生效；关掉后菜单栏只留托盘图标。
+         * 配色取自 `desktopLyric.colorPalette`，且只在开启的那一刻取快照，改配色需关闭再开启。
+         */
+        'appearance.menuBar.showLyric': boolean
+
+        /**
          * 桌面歌词配色方案：已唱 / 未唱
          */
         'desktopLyric.colorPalette': {

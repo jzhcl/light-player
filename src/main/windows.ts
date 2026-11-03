@@ -143,6 +143,9 @@ function baseOptions(): Electron.BrowserWindowConstructorOptions {
             nodeIntegration: false,
             sandbox: false,
             webSecurity: false,
+            // 主窗隐藏 / 最小化后仍要按 30Hz 推进菜单栏歌词：
+            // 默认节流会把 setInterval 压到 1Hz，菜单栏就卡成「一秒跳一次」。
+            backgroundThrottling: false,
         },
     }
 }

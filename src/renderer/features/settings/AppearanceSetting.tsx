@@ -11,6 +11,7 @@ import { isFileExists } from '@renderer/lib/file'
 import { message } from '@renderer/lib/message'
 import { rlog } from '@renderer/lib/log'
 import { isOk } from '@shared/result'
+import { IS_MAC, IS_WINDOWS } from '@renderer/lib/constants'
 
 /** 窗口背景材质取值 */
 type BackgroundMaterial = LP.MainSetting['window.backgroundMaterial']
@@ -91,6 +92,7 @@ export function AppearanceSetting() {
     const showSongStatus = useSettingsStore((s) => s.settings['appearance.titlebar.showSongStatus'])
     const showLyricPreview = useSettingsStore((s) => s.settings['appearance.control.showLyricPreview'])
     const motionEnabled = useSettingsStore((s) => s.settings['appearance.motion.enabled'])
+    const showMenuBarLyric = useSettingsStore((s) => s.settings['appearance.menuBar.showLyric'])
     const setSetting = useSettingsStore((s) => s.setSetting)
 
     // 窗口背景材质是主进程设置，需经 IPC 读写。
@@ -114,9 +116,6 @@ export function AppearanceSetting() {
             setBackgroundMaterial(prev) // 写回失败则回滚 UI
         }
     }
-
-    // 背景材质为 Windows 专属能力，非 Windows 仅展示说明
-    const IS_WINDOWS = /win/i.test(navigator.platform || navigator.userAgent)
 
     // creating 控制展开/收起（宽度 + 内部淡入淡出过渡）；输入框常驻 DOM，靠 CSS 显隐避免 display 不可动画。
     const [creating, setCreating] = useState(false)
@@ -428,38 +427,65 @@ export function AppearanceSetting() {
                 </div>
             </section>
 
-            <section className="settings-group">
-                <header className="settings-group-header">
-                    <h2 className="settings-group-title">系统</h2>
-                </header>
-                <div className="settings-group-body">
-                    <div className="settings-item">
-                        <div className="settings-item-label">
-                            <span className="settings-item-name">窗口背景材质</span>
-                            <span className="settings-item-hint">
-                                {IS_WINDOWS
-                                    ? 'Windows 11 支持 Mica / Tabbed，Acrylic 在 Windows 10 及以上可用'
-                                    : '仅 Windows 平台支持，当前系统不可用'}
-                            </span>
-                        </div>
-                        {IS_WINDOWS && (
+            {/* 平台专属能力各占一组：macOS 只有菜单栏歌词，Windows 只有背景材质。
+                两边互斥，所以不会出现「整组只剩一个不可用项」的空壳。 */}
+            {IS_MAC ? (
+                <section className="settings-group">
+                    <header className="settings-group-header">
+                        <h2 className="settings-group-title">菜单栏</h2>
+                    </header>
+                    <div className="settings-group-body">
+                        <label className="settings-item settings-item--toggle">
+                            <div className="settings-item-label">
+                                <span className="settings-item-name">显示歌词</span>
+                                <span className="settings-item-hint">
+                                    在菜单栏常驻显示当前歌词并逐字高亮；配色取自桌面歌词的
+                                    配色方案，修改后需关闭再开启才生效
+                                </span>
+                            </div>
                             <div className="settings-item-action">
-                                <Select
-                                    value={backgroundMaterial}
-                                    disabled={materialLoading}
-                                    options={[
-                                        { value: 'none', label: '无' },
-                                        { value: 'mica', label: 'Mica' },
-                                        { value: 'acrylic', label: 'Acrylic' },
-                                        { value: 'tabbed', label: 'Tabbed' },
-                                    ]}
-                                    onChange={(v) => void handleBackgroundMaterial(v as BackgroundMaterial)}
+                                <Checkbox
+                                    checked={showMenuBarLyric}
+                                    onChange={(v) => setSetting('appearance.menuBar.showLyric', v)}
                                 />
                             </div>
-                        )}
+                        </label>
                     </div>
-                </div>
-            </section>
+                </section>
+            ) : (
+                <section className="settings-group">
+                    <header className="settings-group-header">
+                        <h2 className="settings-group-title">系统</h2>
+                    </header>
+                    <div className="settings-group-body">
+                        <div className="settings-item">
+                            <div className="settings-item-label">
+                                <span className="settings-item-name">窗口背景材质</span>
+                                <span className="settings-item-hint">
+                                    {IS_WINDOWS
+                                        ? 'Windows 11 支持 Mica / Tabbed，Acrylic 在 Windows 10 及以上可用'
+                                        : '仅 Windows 平台支持，当前系统不可用'}
+                                </span>
+                            </div>
+                            {IS_WINDOWS && (
+                                <div className="settings-item-action">
+                                    <Select
+                                        value={backgroundMaterial}
+                                        disabled={materialLoading}
+                                        options={[
+                                            { value: 'none', label: '无' },
+                                            { value: 'mica', label: 'Mica' },
+                                            { value: 'acrylic', label: 'Acrylic' },
+                                            { value: 'tabbed', label: 'Tabbed' },
+                                        ]}
+                                        onChange={(v) => void handleBackgroundMaterial(v as BackgroundMaterial)}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </section>
+            )}
         </>
     )
 }

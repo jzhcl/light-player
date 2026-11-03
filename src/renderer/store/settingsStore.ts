@@ -202,6 +202,7 @@ export function getDefaultRendererSettings(): LP.RendererSetting {
         'appearance.titlebar.showSongStatus': false,
         'appearance.control.showLyricPreview': false,
         'appearance.motion.enabled': true,
+        'appearance.menuBar.showLyric': true,
         'playlist.order': [],
         'playlist.useSongCoverAsFallback': true,
         'playlist.showPluginTag': true,

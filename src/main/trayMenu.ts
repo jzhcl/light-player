@@ -43,6 +43,14 @@ let trayMenuWindow: BrowserWindow | null = null
 let trayMenuOnScreen = false
 /** 是否已经走过一次真正的 `show()`：只有第一次需要切 OS 可见性 */
 let trayMenuEverShown = false
+/**
+ * 上一次「非点击收起」的时刻（点面板外、失焦等）。
+ *
+ * 点托盘关闭面板时，事件顺序是先失焦收起、再派发 click，于是 click 处理器读到的
+ * 可见性已经是 false，会把「关」判成「开」又弹回来 —— 表现为面板怎么点都关不掉。
+ * 收起时记一笔时间戳，紧跟着的那次 show 请求直接吞掉。
+ */
+let lastBlurHideAt = 0
 
 function clamp(value: number, min: number, max: number): number {
     if (max < min) return min
@@ -141,6 +149,7 @@ export function hideTrayMenu(): void {
     if (!win || win.isDestroyed() || !trayMenuOnScreen) return
 
     trayMenuOnScreen = false
+    lastBlurHideAt = Date.now()
     parkWindow(win)
 }
 
@@ -151,6 +160,12 @@ export function showTrayMenu(trayBounds: Electron.Rectangle): void {
 
     if (trayMenuOnScreen) {
         hideTrayMenu()
+        return
+    }
+
+    // 刚被「点托盘」引发的失焦收起：这次点击的语义是关，别再弹回来
+    if (Date.now() - lastBlurHideAt < 250) {
+        lastBlurHideAt = 0
         return
     }
 
