@@ -6,6 +6,7 @@ import { ContextMenu } from '@renderer/components/ContextMenu'
 import { Icon } from '@renderer/components/Icon'
 import { ScrollArea } from '@renderer/components/ui/ScrollArea'
 import { useInView } from '@renderer/hooks/useInView'
+import { useEvent } from '@renderer/hooks/useEvent'
 import { useNavigateTo } from '@renderer/hooks/useNavigateTo'
 import { useSongListPlayback } from '@renderer/hooks/useSongList'
 import { useStableRows } from '@renderer/hooks/useStableRows'
@@ -29,6 +30,7 @@ import {
 import { addSongsTo, toggleSongLike, type AddTarget } from '@renderer/features/song/songActions'
 import { SEARCH_PAGE_SIZE, searchSongsByPlugin } from './searchService'
 import { useExistingBackfill } from './useExistingBackfill'
+import { LP_EVENT } from '@shared/event'
 
 /**
  * 搜索结果筛选项：
@@ -305,7 +307,17 @@ export function SearchPage() {
     )
 
     /** 已入库歌曲的回填（id / isLiked）：只查增量，且新结果按 key 合并进旧 Map */
-    const { map: existingMap, patch: patchExisting } = useExistingBackfill(songs, searchKey)
+    const { map: existingMap, patchLikeById } = useExistingBackfill(songs, searchKey)
+
+    /** 跨页同步：在底栏 / 播放页 / 其他列表里改喜欢，本页对应行的心形要跟着变 */
+    useEvent(LP_EVENT['SONG.LIKED'], (payload) => {
+        const id = (payload as { id?: string } | undefined)?.id
+        if (id) patchLikeById(id, true)
+    })
+    useEvent(LP_EVENT['SONG.UNLIKED'], (payload) => {
+        const id = (payload as { id?: string } | undefined)?.id
+        if (id) patchLikeById(id, false)
+    })
 
     // 切换 Tab：显示窗退回到综合基准页码（已走过更深的页仍缓存，但显示回退到基准）
     const handleTabChange = useCallback(
@@ -354,16 +366,9 @@ export function SearchPage() {
     // 切换喜欢：未入库先落库（ensureSong），再写 isLiked + 我喜欢歌单
     const toggleLike = useCallback(async (row: SearchRow) => {
         const songR = await ensureSong(row.song, row.id)
-        if (!isOk(songR)) {
-            return
-        }
-        const song = songR.value
-        const isLiked = await toggleSongLike(song)
-        if (isLiked === null) return
-        // 就地更新该行：id 落定、isLiked 取反
-        const k = songKey(row.song.pluginId ?? '', row.song.id)
-        patchExisting(k, { ...song, isLiked })
-    }, [patchExisting])
+        if (!isOk(songR)) return
+        await toggleSongLike(songR.value)
+    }, [])
 
     // 点歌手名 → 以该歌手为关键词重新搜索
     const searchSinger = useCallback(
@@ -443,23 +448,8 @@ export function SearchPage() {
             // 单选且多音质 →「下载」展开音质子菜单
             const singleQuality = targets.length === 1 ? targets[0].song.supportQualities : undefined
             // 搜索结果尚未入库：入库交给 addSongsTo 的 resolver，失败与入库失败统一计数
-            /**
-             * 添加到歌单 / 我喜欢。
-             *
-             * 添加到「我喜欢」后行的心形要立刻亮：`SONG.LIKED` 只带库 id，而刚入库的行
-             * 还没进回填表 → 这里按 resolver 的结果就地补一条。
-             */
             const addTo = (target: AddTarget) => {
-                const liked: { key: string; song: LP.Song }[] = []
-                void addSongsTo(targets, target, async (r) => {
-                    const ensured = await ensureSong(r.song, r.id)
-                    if (isOk(ensured) && target.kind === 'liked') {
-                        liked.push({ key: songKey(r.song.pluginId ?? '', r.song.id), song: ensured.value })
-                    }
-                    return ensured
-                }).then(() => {
-                    for (const { key, song } of liked) patchExisting(key, { ...song, isLiked: true })
-                })
+                void addSongsTo(targets, target, (r) => ensureSong(r.song, r.id))
             }
 
             // 搜索结果尚未入库（LP.Plugin.Song），下载前先 ensureSong 落库为 LP.Song。
@@ -487,7 +477,7 @@ export function SearchPage() {
                 </>
             )
         },
-        [playlists, patchExisting],
+        [playlists],
     )
 
     const emptyText = loading

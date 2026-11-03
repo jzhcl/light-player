@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { isOk } from '@shared/result'
 import { songKey } from '@renderer/features/song/songKey'
-import { getSongsByPluginSongs } from '@renderer/lib/db'
+import { getSongsByIds, getSongsByPluginSongs } from '@renderer/lib/db'
 
 /**
  * 搜索结果里「已入库歌曲」的回填（`id` / `isLiked`）。
@@ -17,6 +17,14 @@ export interface ExistingBackfill {
     map: ReadonlyMap<string, LP.Song>
     /** 就地更新一行（点喜欢后 `id` 落定 / `isLiked` 取反）；同时标记「已入库，不必再查」 */
     patch: (key: string, song: LP.Song) => void
+    /**
+     * 按库 id 改喜欢（跨页回流用）：`SONG.LIKED` / `SONG.UNLIKED` 只带库 id，
+     * 而本表按「插件 + 插件内 id」的合成键索引。
+     *
+     * 命中 → 就地打标；未命中（本页这行当时还没入库，回填只会记「查过、没找到」）
+     * → 按 id 查库拿到合成键，整条补进表里。
+     */
+    patchLikeById: (id: string, isLiked: boolean) => void
 }
 
 interface BackfillStore {
@@ -40,6 +48,8 @@ export function useExistingBackfill(
     const seenRef = useRef<SeenBucket>({ key: resetKey, ids: new Set() })
     const resetKeyRef = useRef(resetKey)
     resetKeyRef.current = resetKey
+    // 回填表的渲染期快照：按库 id 反查合成键要同步读到最新表，不能等下一次渲染
+    const mapRef = useRef<ReadonlyMap<string, LP.Song>>(EMPTY)
 
     /** 换关键词 / 插件集合后第一次触及 seen 时重建桶 */
     const seenOf = (key: string): Set<string> => {
@@ -57,6 +67,24 @@ export function useExistingBackfill(
             return { key: resetKeyNow, map: next }
         })
     }, [])
+
+    /** 按库 id 打「喜欢」标；回填表里没有这条 → 查库换成合成键再整条补进去 */
+    const patchLikeById = useCallback((id: string, isLiked: boolean) => {
+        for (const [key, song] of mapRef.current) {
+            if (song.id !== id) continue
+            patch(key, { ...song, isLiked })
+            return
+        }
+        void (async () => {
+            const r = await getSongsByIds([id])
+            if (!isOk(r) || r.value.length === 0) return
+            const song = r.value[0]
+            const key = songKey(song.pluginId, song.pluginSongId)
+            // 不在当前结果里（事件的歌是别处正在播的那首）→ 没有行要改，别把表撑大
+            if (!songs.some((s) => songKey(s.pluginId ?? '', s.id) === key)) return
+            patch(key, { ...song, isLiked })
+        })()
+    }, [patch, songs])
 
     useEffect(() => {
         const seen = seenOf(resetKey)
@@ -105,5 +133,8 @@ export function useExistingBackfill(
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [songs, resetKey])
 
-    return { map: store.key === resetKey ? store.map : EMPTY, patch }
+    const map = store.key === resetKey ? store.map : EMPTY
+    mapRef.current = map
+
+    return { map, patch, patchLikeById }
 }
