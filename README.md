@@ -17,6 +17,7 @@
 已支持的平台：
 
 - Windows 10 / 11（x64）
+- macOS（Intel 与 Apple Silicon 通用包）
 
 软件变化请查看[更新日志](https://github.com/jzhcl/light-player/blob/main/CHANGELOG.md)。
 
@@ -25,6 +26,12 @@
 > [!NOTE]
 > 首次安装时 Windows SmartScreen 会提示「未知发布者」，
 > 点「更多信息」→「仍要运行」即可。
+
+> [!NOTE]
+> macOS 版本没有开发者签名，也没有公证，首次打开会提示「Apple 无法验证」。
+> 到「系统设置 → 隐私与安全性」点「仍要打开」即可，之后不再提示。
+> 另外，从 dmg 打开后请先把 LightPlayer 拖进「应用程序」再运行，
+> 直接在镜像里运行的话，弹出磁盘后它就不在了。
 
 ## 应用界面
 
@@ -37,6 +44,7 @@
 默认情况下，软件的数据存储在：
 
 - Windows：`%APPDATA%/light-player`
+- macOS：`~/Library/Application Support/light-player`
 
 ## 项目协议
 
