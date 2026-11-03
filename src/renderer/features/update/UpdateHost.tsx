@@ -16,9 +16,14 @@ import { Modal } from '@renderer/components/ui/Modal'
  *   3. 下载完成 → Modal 提示重启；刚升级过 → 弹本次更新日志
  *
  * ⚠️ 决策放渲染端而不是主进程：`update.autoDownload` 存在 localStorage，主进程读不到。
+ *
+ * ⚠️ macOS 没有下载链路（见 main/updater.ts 的 CHECK_ONLY），这里只提示去 Release 页面。
  */
 
 const UPGRADE_CHANGELOG_DELAY_MS = 1500
+
+/** 能否在应用内下载并安装。macOS 换包要靠 Squirrel.Mac，没有 Developer ID 签名必然失败 */
+const CAN_INSTALL_IN_APP = window.env.platform !== 'darwin'
 
 export function UpdateHost() {
     const setState = useUpdateStore((s) => s.setState)
@@ -47,6 +52,12 @@ export function UpdateHost() {
                 // 直接读 store，不用闭包里的值 —— effect 只跑一次，闭包会过期
                 const auto = useSettingsStore.getState().settings['update.autoDownload']
                 rlog.info(`[update] 发现新版本 v${next.latestVersion}，自动下载：${auto ? '开' : '关'}`)
+
+                if (!CAN_INSTALL_IN_APP) {
+                    // duration 0 = 不自动关闭：用户可能在别的页面，得能读到这条
+                    message.info(`发现新版本 v${next.latestVersion}，请到 Release 页面下载`, 0)
+                    return
+                }
 
                 if (auto) {
                     void invokeResult<null>('update:download').then((r) => {

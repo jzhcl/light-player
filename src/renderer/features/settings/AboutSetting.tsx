@@ -6,7 +6,11 @@ import { useUpdate } from '@renderer/features/update/useUpdate'
 
 const REPO_BASE = `https://github.com/${__APP_REPO_OWNER__}/${__APP_REPO_NAME__}`
 const RELEASES_URL = `${REPO_BASE}/releases`
+const LATEST_RELEASE_URL = `${RELEASES_URL}/latest`
 const ISSUES_URL = `${REPO_BASE}/issues`
+
+/** 能否在应用内下载并安装。macOS 换包要靠 Squirrel.Mac，没有 Developer ID 签名必然失败 */
+const CAN_INSTALL_IN_APP = window.env.platform !== 'darwin'
 
 const mb = (bytes: number): string => `${(bytes / 1048576).toFixed(1)} MB`
 
@@ -64,7 +68,9 @@ export function AboutSetting() {
             case 'checking':
                 return '正在检查更新…'
             case 'available':
-                return `发现新版本 v${state.latestVersion ?? ''}`
+                return CAN_INSTALL_IN_APP
+                    ? `发现新版本 v${state.latestVersion ?? ''}`
+                    : `发现新版本 v${state.latestVersion ?? ''}，请到 Release 页面下载`
             case 'downloading':
                 return progress
                     ? `正在下载 ${Math.floor(progress.percent)}%（${mb(progress.transferred)} / ${mb(progress.total)} · ${speed(progress.bytesPerSecond)}）`
@@ -81,9 +87,18 @@ export function AboutSetting() {
     /** 主操作按钮：每个状态只暴露一个动作，避免越级调用 */
     const primaryButton = () => {
         if (state.status === 'available') {
-            return (
+            // macOS 没有应用内下载链路，这里直接把用户送到 Release 页面
+            return CAN_INSTALL_IN_APP ? (
                 <button type="button" className="settings-btn" onClick={download}>
                     下载更新
+                </button>
+            ) : (
+                <button
+                    type="button"
+                    className="settings-btn"
+                    onClick={() => void openExternal(LATEST_RELEASE_URL)}
+                >
+                    前往下载
                 </button>
             )
         }
@@ -119,20 +134,22 @@ export function AboutSetting() {
                     <h2 className="settings-group-title">软件更新</h2>
                 </header>
                 <div className="settings-group-body">
-                    <label className="settings-item settings-item--toggle">
-                        <div className="settings-item-label">
-                            <span className="settings-item-name">自动下载新版本</span>
-                            <span className="settings-item-hint">
-                                开启后检查到新版本会在后台静默下载，完成后提示重启；关闭则只提示有新版本
-                            </span>
-                        </div>
-                        <div className="settings-item-action">
-                            <Checkbox
-                                checked={autoDownload}
-                                onChange={(v) => setSetting('update.autoDownload', v)}
-                            />
-                        </div>
-                    </label>
+                    {CAN_INSTALL_IN_APP && (
+                        <label className="settings-item settings-item--toggle">
+                            <div className="settings-item-label">
+                                <span className="settings-item-name">自动下载新版本</span>
+                                <span className="settings-item-hint">
+                                    开启后检查到新版本会在后台静默下载，完成后提示重启；关闭则只提示有新版本
+                                </span>
+                            </div>
+                            <div className="settings-item-action">
+                                <Checkbox
+                                    checked={autoDownload}
+                                    onChange={(v) => setSetting('update.autoDownload', v)}
+                                />
+                            </div>
+                        </label>
+                    )}
 
                     <label className="settings-item settings-item--toggle">
                         <div className="settings-item-label">

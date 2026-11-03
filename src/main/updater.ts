@@ -9,11 +9,22 @@ import type { AppContext } from './app'
 /**
  * 自动更新。
  *
- * 链路：electron-builder 的 publish 配置 → 打进包里的 resources/app-update.yml →
- *       electron-updater 按它去 GitHub Releases 读 latest.yml → 差分下载 → quitAndInstall。
+ * Windows：electron-builder 的 publish 配置 → 打进包里的 resources/app-update.yml →
+ *         electron-updater 按它去 GitHub Releases 读 latest.yml → 差分下载 → quitAndInstall。
+ *
+ * macOS：只有「检查 + 更新日志」这一半。版本从 releases.atom 读，下载和安装交给用户去 Release 页面手动做。
  *
  * 状态真相在这里，渲染端只读（`update:getState` 拿快照，之后订阅两条事件通道）。
  */
+
+/**
+ * 只检查、不下载。
+ *
+ * macOS 上 Squirrel.Mac 换包要求 Developer ID 签名，没有证书时 electron-updater 的
+ * quitAndInstall 会静默失败（用户点了「重启并更新」，重启完还是旧版本）。所以 darwin
+ * 干脆不开下载链路：版本从 releases.atom 读，安装包交给用户去 Release 页面自己下。
+ */
+const CHECK_ONLY = process.platform === 'darwin'
 
 /** 进度转发节流 */
 const PROGRESS_THROTTLE_MS = 250
@@ -153,6 +164,9 @@ function bindEvents(): void {
 
 /** 检查更新。失败不抛给调用方：具体原因已由 'error' 事件写进状态。 */
 export async function checkForUpdates(): Promise<void> {
+    // darwin 走 feed，不需要 app-update.yml，开发模式下也能验通路
+    if (CHECK_ONLY) return checkByFeed()
+
     assertPackaged('检查更新')
     if (current.status === 'downloading') throw new Error('正在下载更新，请等待下载结束')
     if (inFlight === 'check') return
@@ -207,8 +221,33 @@ export async function checkForUpdates(): Promise<void> {
     }
 }
 
+/** macOS 的检查：拿 releases.atom 的第一条当「最新版本」 */
+async function checkByFeed(): Promise<void> {
+    if (inFlight === 'check') return
+
+    inFlight = 'check'
+    setState({ status: 'checking', error: null })
+    try {
+        const latest = (await fetchReleaseFeed())[0]
+        const currentVersion = app.getVersion()
+        // 顺手缓存：用户接着点「查看变更日志」时，atom 再失败还有这一版兜底
+        latestReleaseNotes = latest
+
+        const newer = compareVersion(latest.version, currentVersion) > 0
+        log.info(`[update] feed 最新 v${latest.version}，当前 v${currentVersion}：${newer ? '有新版本' : '已是最新'}`)
+        setState({ status: newer ? 'available' : 'not-available', latestVersion: latest.version, error: null })
+    } catch (err) {
+        const reason = (err as Error)?.message ?? String(err)
+        log.error('[update] 检查更新失败：', reason)
+        setState({ status: 'error', error: friendlyUpdateError(reason, net.isOnline()) || '检查更新失败' })
+    } finally {
+        inFlight = null
+    }
+}
+
 /** 下载更新。只在 available 状态可调；失败后要重新检查（electron-updater 不保证 error 态可续传）。 */
 export async function downloadUpdate(): Promise<void> {
+    if (CHECK_ONLY) throw new Error('macOS 版不支持应用内下载更新，请到 Release 页面手动下载')
     assertPackaged('下载更新')
     if (current.status !== 'available') throw new Error('当前没有可下载的更新')
     if (inFlight === 'download') return
@@ -234,6 +273,7 @@ export async function downloadUpdate(): Promise<void> {
 
 /** 退出并安装。isSilent=true 静默跑安装器，isForceRunAfter=true 装完自动拉起新版本。 */
 export function installUpdate(): void {
+    if (CHECK_ONLY) throw new Error('macOS 版不支持应用内安装更新，请到 Release 页面手动下载')
     assertPackaged('安装更新')
     if (current.status !== 'downloaded') throw new Error('更新尚未下载完成')
 
@@ -249,31 +289,15 @@ export function installUpdate(): void {
 /**
  * 取 `fromVersion` 之后的所有 Release 说明，按版本倒序。
  *
- * 数据源是 releases.atom（网页端的 feed），不是 api.github.com：
- *   API 对未认证请求限制 60 次/小时/IP，用户多点几次「查看变更日志」就会 403。
- *   atom 走 github.com 本身，不占 API 限额，而且和 electron-updater 检查版本用的是同一个源。
- *
  * - `fromVersion` + inclusive=false：返回「fromVersion 之后」的全部变更（首启弹窗用）
  * - inclusive=true：把 fromVersion 自己那条也算进来（手动「查看变更日志」用
  * - 过滤后为空（当前已是最新 / 比 feed 里所有版本都新）：只返回最新一版
- * - 拉取失败：退回 electron-updater 检查时带回的那一版说明；再没有就抛错，由调用方决定弹不弹
- *
- * ⚠️ 代价：feed 只给最近 10 个 release。跨 10 个以上版本时拿不全 —— 实际上不会有人
- *    落后 10 个大版本还来这里看日志；真要补全得回到 API，或者发布时附带一份 changelog 文件。
+ * - 拉取失败：退回最近一次检查拿到的版本说明；再没有就抛错，由调用方决定弹不弹
  */
 export async function fetchChangelog(fromVersion: string | null, inclusive = false): Promise<ChangelogEntry[]> {
-    if (!REPO) throw new Error('构建时没拿到仓库信息，无法获取更新日志')
-
-    // URL 要进错误文本：friendlyUpdateError 靠 `.atom` 区分「更新源本身不存在」和「源上缺文件」
-    const url = `https://github.com/${REPO}/releases.atom`
-    let xml: string
+    let entries: ChangelogEntry[]
     try {
-        const res = await fetch(url, {
-            headers: { 'User-Agent': 'lightplayer' },
-            signal: AbortSignal.timeout(CHANGELOG_TIMEOUT_MS),
-        })
-        if (!res.ok) throw new Error(`HTTP ${res.status} ${url}`)
-        xml = await res.text()
+        entries = await fetchReleaseFeed()
     } catch (err) {
         const reason = (err as Error)?.message ?? String(err)
         const friendly = friendlyUpdateError(reason, net.isOnline())
@@ -281,9 +305,6 @@ export async function fetchChangelog(fromVersion: string | null, inclusive = fal
         if (latestReleaseNotes?.notes) return [latestReleaseNotes]
         throw new Error(`获取更新日志失败：${friendly || reason}`)
     }
-
-    const entries = parseReleasesAtom(xml)
-    if (entries.length === 0) throw new Error('获取更新日志失败：feed 里没有解析到任何版本')
 
     const matched = entries.filter((e) => {
         if (!fromVersion) return true
@@ -296,6 +317,32 @@ export async function fetchChangelog(fromVersion: string | null, inclusive = fal
     )
 
     return matched.length > 0 ? matched : entries.slice(0, 1)
+}
+
+/**
+ * 拉 releases feed 并按版本倒序解析。
+ *
+ * 数据源是 releases.atom（网页端的 feed），不是 api.github.com：
+ *   API 对未认证请求限制 60 次/小时/IP，用户多点几次「查看变更日志」就会 403。
+ *   atom 走 github.com 本身，不占 API 限额。
+ *
+ * 代价：feed 只给最近 10 个 release。跨 10 个以上版本时拿不全 —— 实际上不会有人
+ * 落后 10 个大版本还来这里看日志；真要补全得回到 API，或者发布时附带一份 changelog 文件。
+ */
+async function fetchReleaseFeed(): Promise<ChangelogEntry[]> {
+    if (!REPO) throw new Error('构建时没拿到仓库信息，无法获取更新信息')
+
+    // URL 要进错误文本：friendlyUpdateError 靠 `.atom` 区分「更新源本身不存在」和「源上缺文件」
+    const url = `https://github.com/${REPO}/releases.atom`
+    const res = await fetch(url, {
+        headers: { 'User-Agent': 'lightplayer' },
+        signal: AbortSignal.timeout(CHANGELOG_TIMEOUT_MS),
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${url}`)
+
+    const entries = parseReleasesAtom(await res.text())
+    if (entries.length === 0) throw new Error('feed 里没有解析到任何版本')
+    return entries
 }
 
 /**
@@ -366,6 +413,13 @@ function stripTags(text: string): string {
 
 export function initUpdater(appCtx: AppContext): void {
     hostCtx = appCtx
+
+    if (CHECK_ONLY) {
+        // 不绑定任何 electron-updater 事件：这条链路上不存在下载与安装，
+        // 装了也用不上（没有 app-update.yml 之外的差别，只是徒增状态分支）
+        log.info(`[update] macOS 仅检查更新 v${app.getVersion()}（repo=${REPO ?? '未知'}）`)
+        return
+    }
 
     if (!app.isPackaged) {
         log.info('[update] 开发模式：跳过自动更新（未打包时没有 app-update.yml）')
