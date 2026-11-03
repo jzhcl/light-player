@@ -1,14 +1,15 @@
-import { isFileExists } from '@renderer/lib/file'
+import { probeFileAccess } from '@renderer/lib/file'
 import { pluginInvoke } from '@renderer/lib/plugin'
 import { validateLink } from '@renderer/lib/utils'
 import { isOk } from '@shared/result'
+import type { FileAccess } from '@shared/types/file'
 import { nearestFirst, supportedQualities } from './resolveQuality'
 
 
 /**
  * 取源的两个 provider：本地文件 / 插件。
  *
- * - 不做副作用。本地探测出的「在 / 不在」只通过 `ProbeSink` 回调交给调用方。
+ * - 不做副作用。本地探测出的结论只通过 `ProbeSink` 回调交给调用方。
  * - 不读设置。偏好（首选音质）以具体档位传进来的。
  * - 只回答「有没有、是什么」，不决定「用不用」（那是编排层的事）。
  */
@@ -17,8 +18,11 @@ import { nearestFirst, supportedQualities } from './resolveQuality'
  * 本地探测的出口：每次探测后立刻回调，调用方据此维护「文件缺失」提示层。
  * 立刻回调（而不是事后批量）是为了保持时序 ——
  * 否则提示层的写入会推迟到一次插件网络往返之后。
+ *
+ * `access` 有三态，`denied`（在磁盘上但没权限读）不能被当成缺失：
+ * 标成缺失会让列表把它灰成「文件已丢失」，用户会去别处找文件。
  */
-export type ProbeSink = (path: string, exists: boolean) => void
+export type ProbeSink = (path: string, access: FileAccess) => void
 
 /** 一条已定档的可用链接 */
 export interface PickedLink {
@@ -26,47 +30,63 @@ export interface PickedLink {
     url: string
 }
 
+/**
+ * 本地探测结果。
+ *
+ * `deniedPath` 与 `picked` 互斥：记录里有这份文件、但它读不了（无权限）。
+ */
+export interface LocalProbe {
+    picked: PickedLink | null
+    deniedPath: string | null
+}
+
 /** 默认的探测出口：不关心（下载器等消费方不需要提示层） */
 const NOOP_SINK: ProbeSink = () => {
 }
 
+const NOTHING: LocalProbe = { picked: null, deniedPath: null }
+
 /**
  * 步骤①：目标音质对应的那份本地文件。
- * @returns 命中则返回它；文件在记录里但读不到 → 回调 `(path,false)` 并返回 null
+ * @returns 命中则 `picked`；文件在记录里但读不了 → 回调 `denied` 并给出 `deniedPath`
  */
 export async function probeLocalFile(
     song: LP.Song,
     targetQuality: Quality,
     onProbe: ProbeSink = NOOP_SINK,
-): Promise<PickedLink | null> {
+): Promise<LocalProbe> {
     const local = song.downloadQualities?.find((q) => q.type === targetQuality)
-    if (!local?.path) return null
+    if (!local?.path) return NOTHING
 
-    const exists = await isFileExists(local.path)
-    onProbe(local.path, exists)
-    return exists ? { quality: targetQuality, url: local.path } : null
+    const access = await probeFileAccess(local.path)
+    onProbe(local.path, access)
+    if (access === 'ok') return { picked: { quality: targetQuality, url: local.path }, deniedPath: null }
+    return access === 'denied' ? { picked: null, deniedPath: local.path } : NOTHING
 }
 
 /**
- * 步骤④：本地兜底 —— 在线路径全部失败后，从这首歌已下载的本地文件里按「最接近目标音质」挑一个还在的。
+ * 步骤④：本地兜底 —— 在线路径全部失败后，从这首歌已下载的本地文件里按「最接近目标音质」挑一个能读的。
  * 只在救场时才用，不参与正常路径。
  */
 export async function probeLocalFallback(
     song: LP.Song,
     targetQuality: Quality,
     onProbe: ProbeSink = NOOP_SINK,
-): Promise<PickedLink | null> {
+): Promise<LocalProbe> {
     const downloaded = song.downloadQualities ?? []
-    if (!downloaded.length) return null
+    if (!downloaded.length) return NOTHING
 
+    let deniedPath: string | null = null
     for (const q of nearestFirst(targetQuality)) {
         const hit = downloaded.find((d) => d.type === q && d.path)
         if (!hit?.path) continue
-        const exists = await isFileExists(hit.path)
-        onProbe(hit.path, exists)
-        if (exists) return { quality: q, url: hit.path }
+        const access = await probeFileAccess(hit.path)
+        onProbe(hit.path, access)
+        if (access === 'ok') return { picked: { quality: q, url: hit.path }, deniedPath: null }
+        // 记下第一个读不了的：全部失败时要拿它出「没权限」的文案，而不是「没链接」
+        deniedPath ??= access === 'denied' ? hit.path : null
     }
-    return null
+    return { picked: null, deniedPath }
 }
 
 /**

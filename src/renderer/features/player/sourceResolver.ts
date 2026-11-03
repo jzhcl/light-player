@@ -1,6 +1,6 @@
 import { resolveQuality } from './resolveQuality'
 import { getCachedLink, setCachedLink } from './linkCache'
-import { probeLocalFallback, probeLocalFile, requestPluginLink, type PickedLink, type ProbeSink } from './linkProviders'
+import { probeLocalFallback, probeLocalFile, requestPluginLink, type ProbeSink } from './linkProviders'
 import { isOk } from '@shared/result'
 
 
@@ -28,7 +28,7 @@ export interface ResolvedSource {
 }
 
 export interface ResolveFailure {
-    reason: 'no-quality' | 'local-missing' | 'provider-unavailable'
+    reason: 'no-quality' | 'local-missing' | 'local-denied' | 'provider-unavailable'
     /** 已经是给用户看的中文，调用方直接透传给 `PLAYER.ERROR` / toast */
     message: string
 }
@@ -50,6 +50,26 @@ const fail = (reason: ResolveFailure['reason'], message: string): ResolveOutcome
     failure: { reason, message },
 })
 
+/** 「没权限读本地文件」的固定前缀 */
+export const LOCAL_DENIED_PREFIX = '没有权限读取本地文件'
+
+export function isLocalDeniedFailure(message: string): boolean {
+    return message.startsWith(LOCAL_DENIED_PREFIX)
+}
+
+/**
+ * 读不了的本地文件，文案要说清「是没授权，不是文件丢了、更不是格式不支持」。
+ *
+ * macOS 上这类目录（下载 / 桌面 / 文稿）由 TCC 管，用户只能去系统设置里放行；
+ * 其他平台多半是权限位问题。
+ */
+function deniedMessage(path: string): string {
+    const how = window.env.platform === 'darwin'
+        ? '到「系统设置 → 隐私与安全性 → 文件与文件夹」中允许 LightPlayer 访问后重试'
+        : '请检查该文件的权限后重试'
+    return `${LOCAL_DENIED_PREFIX}：${path}。${how}`
+}
+
 export async function resolveSource(
     song: LP.Song,
     requested: Quality | undefined,
@@ -59,12 +79,17 @@ export async function resolveSource(
     if (!isOk(qR)) return fail('no-quality', qR.error)
     const targetQuality = qR.value
 
-    // ① 本地文件：由 provider 探测，命中即用
-    const local: PickedLink | null = await probeLocalFile(song, targetQuality, ctx.onProbe)
-    if (local) return ok({ ...local, from: 'local' })
+    // ① 本地文件：由 provider 探测，能读即用
+    const local = await probeLocalFile(song, targetQuality, ctx.onProbe)
+    if (local.picked) return ok({ ...local.picked, from: 'local' })
 
-    // 纯本地身份：唯一的那份文件没了就是没得播，不再往下找在线
-    if (song.pluginId === 'local') return fail('local-missing', `本地文件已丢失：${song.name}`)
+    // 纯本地身份：这份文件就代表这首歌，读不了 / 不在都到此为止，不再往下找在线
+    if (song.pluginId === 'local') {
+        return fail(
+            local.deniedPath ? 'local-denied' : 'local-missing',
+            local.deniedPath ? deniedMessage(local.deniedPath) : `本地文件已丢失：${song.name}`,
+        )
+    }
 
     // ② 内存链接缓存
     const cached = getCachedLink(song.id, targetQuality)
@@ -83,7 +108,11 @@ export async function resolveSource(
 
     // ④ 本地兜底
     const fallback = await probeLocalFallback(song, targetQuality, ctx.onProbe)
-    if (fallback) return ok({ ...fallback, from: 'fallback' })
+    if (fallback.picked) return ok({ ...fallback.picked, from: 'fallback' })
+
+    // 在线也拿不到，而本地那份是「读不了」而非「不在」→ 权限才是要用户动手的那一条
+    const deniedPath = local.deniedPath ?? fallback.deniedPath
+    if (deniedPath) return fail('local-denied', deniedMessage(deniedPath))
 
     return fail('provider-unavailable', providerError ?? '当前歌曲无可用播放链接')
 }

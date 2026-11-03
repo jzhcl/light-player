@@ -12,6 +12,9 @@ export interface FileInfo {
 /** 文件编码 */
 export type FileEncoding = 'utf-8' | 'ascii' | 'latin1' | 'base64' | 'hex' | 'utf16le'
 
+/** 一次「能不能读」的结论 */
+export type FileAccess = 'ok' | 'missing' | 'denied'
+
 /** 文件选择对话框选项 */
 export interface FileSelectionOptions {
     title?: string

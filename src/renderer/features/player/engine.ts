@@ -49,6 +49,15 @@ let loaded: LoadedSource | null = null
 let pendingSeek: number | null = null
 /** 代际：每次「作废 / 开始装载」+1。异步取链回来时代际不符 → 整条丢弃，绝不回写 */
 let generation = 0
+/**
+ * 本代际的失败是否已经上报过。
+ *
+ * 一次装载失败会同时走到两条路：`<audio>` 的 `error` 事件（带真正的 `MediaError`）和
+ * `play()` 的 reject（`NotSupportedError`，DOMException 的 code 是 9）。
+ * 两条都上报就是同一件事弹两条消息，且后一条的文案是毫无意义的「媒体错误（code 9）」。
+ * 谁先到谁上报，另一个只管收状态。
+ */
+let failureReported = false
 
 // ---- 宿主推进来的配置 ----
 let volume = 1
@@ -118,6 +127,7 @@ export function invalidate(): void {
     generation++
     loaded = null
     pendingSeek = null
+    failureReported = false
     S().patch({ currentPlaybackQuality: null })
 }
 
@@ -130,10 +140,21 @@ export function invalidate(): void {
 export function beginLoad(): number {
     const a = el()
     generation++
+    failureReported = false
     transition('loading', false)
     a.pause()
     S().patch({ duration: 0 })
     return generation
+}
+
+/**
+ * 认领「这一次装载的失败」。
+ * @returns true = 本次由你上报；false = 同一代际下已经报过，别重复弹
+ */
+function claimFailure(): boolean {
+    if (failureReported) return false
+    failureReported = true
+    return true
 }
 
 /**
@@ -191,7 +212,12 @@ export async function start(): Promise<void> {
         }
         if (gen !== generation) return
         transition('stopped', false)
-        S().onPlayRejected(e)
+        // 同一代际的失败只报一次。`play()` 被拒往往只是「装载失败」的另一个回声 ——
+        // 元素上已经有真正的 MediaError 就用它解释原因，别把 DOMException 的 code 9 抛给用户
+        if (!claimFailure()) return
+        const mediaError = el().error
+        if (mediaError) S().onMediaError(mediaError)
+        else S().onPlayRejected(e)
     }
 }
 
@@ -273,6 +299,8 @@ function el(): HTMLAudioElement {
         })
         audio.addEventListener('error', () => {
             transition('stopped', true)
+            // 同一次装载的两条失败路径二选一上报，见 `claimFailure`
+            if (!claimFailure()) return
             S().onMediaError(audio!.error)
         })
 

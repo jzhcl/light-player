@@ -10,10 +10,10 @@ import {
     unlinkSync,
     writeFileSync
 } from 'node:fs'
-import { access } from 'node:fs/promises'
+import { access, open } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { app } from 'electron'
-import type { FileEncoding, FileInfo } from '@shared/types/file'
+import type { FileAccess, FileEncoding, FileInfo } from '@shared/types/file'
 import { log } from '@main/log'
 
 /** 内容的字节数 */
@@ -66,6 +66,27 @@ export async function isFileExistAsync(path: string): Promise<boolean> {
         return true
     } catch {
         return false
+    }
+}
+
+/**
+ * 文件能不能读。
+ *
+ * `'ok'` 能读 / `'missing'` 不在磁盘上 / `'denied'` 在但读不了。
+ */
+export async function probeFileAccess(path: string): Promise<FileAccess> {
+    let handle
+    try {
+        handle = await open(path, 'r')
+        return 'ok'
+    } catch (err) {
+        const code = (err as NodeJS.ErrnoException | null)?.code
+        // ENOTDIR：路径中间有一段不是目录，等价于「没有这个文件」
+        if (code === 'ENOENT' || code === 'ENOTDIR') return 'missing'
+        // 其余（EACCES / EPERM / EMFILE / EISDIR / EIO）一律算「读不了」
+        return 'denied'
+    } finally {
+        void handle?.close().catch(() => {})
     }
 }
 

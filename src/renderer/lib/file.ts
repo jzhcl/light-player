@@ -1,5 +1,6 @@
 import { invoke, invokeResult } from './ipc'
-import type { FileEncoding, FileInfo, FileSelectionOptions } from '@shared/types/file'
+import { isOk } from '@shared/result'
+import type { FileAccess, FileEncoding, FileInfo, FileSelectionOptions } from '@shared/types/file'
 
 
 /** 读文件。`encoding` 传 `'base64'` 时返回 base64 字符串 */
@@ -52,6 +53,12 @@ export async function listDir(dir: string): Promise<Result<FileInfo[]>> {
 
 export async function isFileExists(path: string): Promise<boolean> {
     return invoke<boolean>('file:exists', path)
+}
+
+/** 能不能读这份文件 */
+export async function probeFileAccess(path: string): Promise<FileAccess> {
+    const r = await invokeResult<FileAccess>('file:access', path)
+    return isOk(r) ? r.value : 'denied'
 }
 
 /** 批量存在性探测，返回数组与入参一一对应 */

@@ -11,6 +11,7 @@ import {
     isFileExist,
     isFileExistAsync,
     moveFile,
+    probeFileAccess,
     readFile,
     writeFile
 } from '../file'
@@ -103,6 +104,15 @@ export function registerFileHandlers(ctx: AppContext): void {
 
 
     ipcMain.handle('file:exists', (_e, path: string) => isFileExist(path))
+
+    // 能不能读
+    ipcMain.handle('file:access', async (_e, path: string) => {
+        try {
+            return ok(await probeFileAccess(path))
+        } catch (err) {
+            return fileFail('access', `path: ${path}`, err)
+        }
+    })
 
     // 批量存在性探测
     ipcMain.handle('file:existsMany', async (_e, paths: string[]) =>

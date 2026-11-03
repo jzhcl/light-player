@@ -31,7 +31,7 @@ import { scheduleIdleLoop } from './idle'
  * ## 与其他层的关系
  *
  * ⚠️ 这里只是「提示层」，不是判据层。缓存里没标记 ≠ 文件在（可能没扫到 / 刚被删）。
- * 真正的判定在播放那一刻（`songLinkService.getSongLink` 的 `isFileExists`），两者职责不重叠。
+ * 真正的判定在播放那一刻（`songLinkService.getSongLink` 的 `probeFileAccess`），两者职责不重叠。
  *
  * 运行期写入方有两处，互补而非冗余（`LocalDownloadPage.playFrom` 探到缺失时提前 return，
  * 压根不会走到 `getSongLink`）：

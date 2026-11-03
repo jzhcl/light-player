@@ -8,6 +8,7 @@ import { enqueueCover } from '@renderer/features/song/coverPipeline'
 import { recordPlay } from '@renderer/features/song/songPlayedStatsService'
 import { isQueueRef, queueEntryKey, toQueueRef, type QueueEntry } from '@renderer/features/song/songKey'
 import { getSongLink } from '@renderer/features/player/songLinkService'
+import { isLocalDeniedFailure } from '@renderer/features/player/sourceResolver'
 import { invalidateLink } from '@renderer/features/player/linkCache'
 import * as engine from '@renderer/features/player/engine'
 import {
@@ -216,7 +217,11 @@ async function ensureStreamLoaded(requestedQuality?: Quality): Promise<boolean> 
     if (!isOk(urlR)) {
         // 不清 pendingSeek：用户重试时他指定的起点还在。
         engine.abortLoad(gen)
-        eventBus.emit(LP_EVENT['PLAYER.ERROR'], { song, error: new Error(urlR.error) })
+        const error = new Error(urlR.error)
+        // 没权限读本地文件不是「这首歌的锅」：换下一首同样读不了，自动切换只是徒劳。
+        // 用 name 把这件事带过去（Result 只传字符串，类型信息在这一步已经没了）
+        if (isLocalDeniedFailure(urlR.error)) error.name = 'PermissionError'
+        eventBus.emit(LP_EVENT['PLAYER.ERROR'], { song, error })
         return false
     }
     const { quality, url } = urlR.value
@@ -615,10 +620,20 @@ const MEDIA_ERROR_TEXT: Record<number, string> = {
     4: '音频格式不支持或链接已失效',
 }
 
+/** `play()` 被拒时的 DOMException */
+const DOM_EXCEPTION_TEXT: Record<string, string> = {
+    NotSupportedError: '音频无法解码（格式不支持、文件损坏，或没有读取该文件的权限）',
+    NotAllowedError: '系统拒绝了播放请求',
+}
+
 /** 播放失败的原因 */
 function failReason(error: unknown): string {
-    const code = (error as { code?: unknown } | null | undefined)?.code
-    if (typeof code === 'number') return MEDIA_ERROR_TEXT[code] ?? `媒体错误（code ${code}）`
+    // 只有真正的 MediaError 才按 code 查表 —— DOMException 也有 code
+    if (typeof MediaError !== 'undefined' && error instanceof MediaError) {
+        return MEDIA_ERROR_TEXT[error.code] ?? `媒体错误（code ${error.code}）`
+    }
+    const name = (error as { name?: unknown } | null | undefined)?.name
+    if (typeof name === 'string' && DOM_EXCEPTION_TEXT[name]) return DOM_EXCEPTION_TEXT[name]
     if (error instanceof Error) return error.message || error.name
     return String(error)
 }

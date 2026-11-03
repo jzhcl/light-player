@@ -30,11 +30,14 @@ function readPreferredQuality(): Quality {
 /**
  * 本地探测 → 提示层的唯一施加点。
  * 探测发生在取源层（每次探测立刻回调），副作用只在这一处落地：
- * 在 = 清掉陈旧标记（文件被放回磁盘 / 重新下载 → 行立刻恢复），不在 = 记到运行期缺失层。
+ * 能读 = 清掉陈旧标记（文件被放回磁盘 / 重新下载 → 行立刻恢复），不在 = 记到运行期缺失层。
+ *
+ * `denied` 两边都不做：文件还在磁盘上，只是这次没有读取权限（macOS 的 TCC）。
+ * 标成缺失会让整列表变灰、文案说「已丢失」，而用户要做的其实是去系统设置里授权。
  */
-const probeSink: ProbeSink = (path, exists) => {
-    if (exists) clearFileMissing(path)
-    else markFileMissing(path)
+const probeSink: ProbeSink = (path, access) => {
+    if (access === 'ok') clearFileMissing(path)
+    else if (access === 'missing') markFileMissing(path)
 }
 
 /**

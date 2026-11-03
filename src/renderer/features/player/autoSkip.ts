@@ -28,14 +28,15 @@ export const TOKEN_LIMIT = 100
 /**
  * 错误是否属于「这首歌 / 这条源本身播不了」—— 只有这类才值得跳下一首。
  *
- * 排除的三类都是「被打断 / 被策略拒绝」，不是资源的锅：
+ * 排除的四类都是「被打断 / 被策略拒绝」，不是资源的锅：
  *  - `AbortError`：`play()` 被新的装载顶掉，或被 `pause()` 打断（快速切歌时必然出现）；
  *  - `NotAllowedError`：自动播放策略拒绝，换一首歌同样会被拒；
+ *  - `PermissionError`：没有读取本地文件的权限；
  *  - MediaError `code === 1`（MEDIA_ERR_ABORTED）：取流被中止，同上。
  */
 function isSkippableError(error: unknown): boolean {
     const name = (error as { name?: unknown } | null | undefined)?.name
-    if (name === 'AbortError' || name === 'NotAllowedError') return false
+    if (name === 'AbortError' || name === 'NotAllowedError' || name === 'PermissionError') return false
     return (error as { code?: unknown } | null | undefined)?.code !== 1
 }
 
