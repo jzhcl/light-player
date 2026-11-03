@@ -11,6 +11,7 @@
     "build": "vite build",
     "typecheck": "tsc -b",
     "pack:win": "pnpm build && electron-builder --win --publish never && node scripts/clean-release.cjs",
+    "pack:mac": "pnpm build && electron-builder --mac --universal --publish never && node scripts/clean-release.cjs",
     "release": "node scripts/release.cjs"
   },
   "dependencies": {
@@ -53,7 +54,8 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "electron",
-      "esbuild"
+      "esbuild",
+      "electron-winstaller"
     ]
   }
 }

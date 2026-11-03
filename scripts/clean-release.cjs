@@ -4,23 +4,27 @@
  *
  * 留下的：
  *   *.exe                         NSIS 安装包
+ *   *.dmg                         mac 安装镜像（拖进「应用程序」）
+ *   *.zip                         mac 自动更新的载体（Squirrel.Mac 只认 zip，dmg 不参与更新）
  *   *.blockmap                    差分更新的块索引（electron-updater 靠它只下变化的部分）
- *   latest*.yml                   更新源清单
+ *   latest*.yml                   更新源清单（latest.yml / latest-mac.yml）
  *
  * 删掉的（electron-builder 的中间产物 / 调试文件，对它自己之外的任何人都没用）：
  *   win-unpacked/            解包目录，installer 用完就没价值了（--keep-unpacked 可保留）
- *   .icon-ico/               png → ico 转换的临时目录
+ *   mac-arm64/ mac-universal/   mac 的解包目录，同理
+ *   .icon-ico/ .icon-icns/   png → ico / icns 转换的临时目录
  *   builder-debug.yml        构建期 debug 记录
  *   builder-effective-config.yaml  合并后的配置快照
  *
- * 以后要加 zip / msi，记得在 KEEP_EXT 里补扩展名，否则新产物会被当成垃圾删掉。
+ * 以后要加新 target，记得在 KEEP_EXT 里补扩展名，否则新产物会被当成垃圾删掉。
  */
 const fs = require('node:fs')
 const path = require('node:path')
 
-const KEEP_EXT = new Set(['.exe', '.blockmap'])
+const KEEP_EXT = new Set(['.exe', '.blockmap', '.dmg', '.zip'])
 const KEEP_UPDATE_META = /^latest.*\.yml$/
-const DROP_ROOTS = ['win-unpacked', '.icon-ico']
+const DROP_ROOTS = ['win-unpacked', 'mac', 'mac-arm64', 'mac-x64', 'mac-universal']
+const DROP_ROOTS_EXTRA = ['.icon-ico', '.icon-icns']
 const DROP_FILES = ['builder-debug.yml', 'builder-effective-config.yaml']
 
 const keepUnpacked = process.argv.includes('--keep-unpacked')
@@ -34,14 +38,22 @@ if (!fs.existsSync(outDir)) {
     process.exit(0)
 }
 
-/** 删 win-unpacked 之前把 app-update.yml 打出来 */
-function reportAppUpdateYml() {
-    const file = path.join(outDir, 'win-unpacked', 'resources', 'app-update.yml')
-    if (!fs.existsSync(file)) {
-        console.warn('[clean-release] ⚠️  包里没有 app-update.yml —— publish 没生效，自动更新不会工作')
+/** 删解包目录之前把 app-update.yml 打出来：它是「publish 有没有生效」的唯一证据 */
+function reportAppUpdateYml(dirName) {
+    const base = path.join(outDir, dirName)
+    // win 是 resources/，mac 是 <ProductName>.app/Contents/Resources/
+    const candidates = [path.join(base, 'resources', 'app-update.yml')]
+    for (const entry of fs.readdirSync(base)) {
+        if (entry.endsWith('.app')) {
+            candidates.push(path.join(base, entry, 'Contents', 'Resources', 'app-update.yml'))
+        }
+    }
+    const file = candidates.find((f) => fs.existsSync(f))
+    if (!file) {
+        console.warn(`[clean-release] ⚠️  ${dirName} 里没有 app-update.yml —— publish 没生效，自动更新不会工作`)
         return
     }
-    console.log('[clean-release] app-update.yml（已打进安装包）：')
+    console.log(`[clean-release] app-update.yml（${dirName}，已打进包）：`)
     for (const line of fs.readFileSync(file, 'utf8').trim().split(/\r?\n/)) {
         console.log(`    ${line}`)
     }
@@ -50,7 +62,9 @@ function reportAppUpdateYml() {
 const removed = []
 const kept = []
 
-if (fs.existsSync(path.join(outDir, 'win-unpacked'))) reportAppUpdateYml()
+for (const dirName of DROP_ROOTS) {
+    if (fs.existsSync(path.join(outDir, dirName))) reportAppUpdateYml(dirName)
+}
 
 for (const name of fs.readdirSync(outDir)) {
     const full = path.join(outDir, name)
@@ -58,8 +72,11 @@ for (const name of fs.readdirSync(outDir)) {
     const ext = path.extname(name).toLowerCase()
 
     let drop = false
-    if (stat.isDirectory()) drop = !(keepUnpacked && DROP_ROOTS[0] === name) && DROP_ROOTS.includes(name)
-    else if (DROP_FILES.includes(name)) drop = true
+    if (stat.isDirectory()) {
+        const disposable = DROP_ROOTS.includes(name) || DROP_ROOTS_EXTRA.includes(name)
+        // --keep-unpacked 只对解包目录生效，图标临时目录照删
+        drop = disposable && !(keepUnpacked && /unpacked/.test(name))
+    } else if (DROP_FILES.includes(name)) drop = true
     else drop = !KEEP_EXT.has(ext) && !KEEP_UPDATE_META.test(name)
 
     if (drop) {

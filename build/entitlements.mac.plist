@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  hardened runtime 下 Electron 必需的权限。缺 allow-jit 会在 arm64 上直接崩在 V8 初始化。
+
+  disable-library-validation 是给 ad-hoc 签名用的：Electron 内置的 Framework / Helper
+  带的是 Apple 给 Electron 项目签的 Team ID，和我们自己的签名不同；hardened runtime 的库校验
+  会因此拒绝加载，报 "mapping process and mapped file have different Team IDs"。
+  拿到 Developer ID 后所有嵌套框架会被重新签成同一个 Team ID，这一项就可以删掉（更严）。
+-->
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+</dict>
+</plist>

@@ -1,5 +1,5 @@
-import { app, BrowserWindow, dialog } from 'electron'
-import type { Tray } from 'electron'
+import { app, BrowserWindow, dialog, shell } from 'electron'
+import type { MessageBoxOptions, Tray } from 'electron'
 import { join } from 'node:path'
 import {
     closeLyricWindow,
@@ -163,6 +163,37 @@ async function confirmQuit(ctx: AppContext, taskCount: number, updateDownloading
     }
 }
 
+/**
+ * 从 dmg 镜像里直接双击运行。
+ *
+ * 这不算「装好了」：App 跑在只读卷上，用户关掉盘符后会发现系统里根本没有这个 App。
+ * dmg 里那句「拖到应用程序」是可以跳过的，所以这里主动说清楚，而不是让他莫名其妙丢盘。
+ */
+function warnIfRunningFromDmg(ctx: AppContext): void {
+    if (process.platform !== 'darwin' || !app.isPackaged) return
+    // 挂载点是 /Volumes/<卷名>/LightPlayer.app/Contents/MacOS/LightPlayer
+    if (!process.execPath.startsWith('/Volumes/')) return
+
+    const options: MessageBoxOptions = {
+        type: 'info',
+        message: '请先把 LightPlayer 装到「应用程序」',
+        detail:
+            '你现在是直接从安装镜像启动的：弹出镜像后这个 App 就会消失，' +
+            '临时数据也不会留下。\n\n把 LightPlayer 拖进「应用程序」文件夹，再从那里打开。',
+        buttons: ['打开「应用程序」', '仍要继续'],
+        defaultId: 0,
+        cancelId: 1,
+        noLink: true,
+    }
+
+    const win = ctx.mainWindow
+    const shown =
+        win && !win.isDestroyed() ? dialog.showMessageBox(win, options) : dialog.showMessageBox(options)
+    void shown.then(({ response }) => {
+        if (response === 0) void shell.openPath('/Applications')
+    })
+}
+
 export function bootstrap(): AppContext {
     const ctx = createContext()
     const startedAt = Date.now()
@@ -216,6 +247,7 @@ export function bootstrap(): AppContext {
         registerIpcHandlers(ctx)
 
         initUpdater(ctx)
+        warnIfRunningFromDmg(ctx)
     })
 
     app.on('window-all-closed', () => {

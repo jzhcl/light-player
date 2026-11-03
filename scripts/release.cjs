@@ -3,10 +3,15 @@
  * 发布到 GitHub Releases。
  *
  * 用法：
- *   pnpm pack:win                                  # 先出产物（release/<version>/ 下应有 exe + blockmap + latest.yml）
+ *   pnpm pack:win | pnpm pack:mac                  # 先出产物（release/<version>/ 下应有安装包 + blockmap + latest*.yml）
  *   GH_TOKEN=xxx pnpm release                      # 发布：建 draft → 传 asset → publish
  *   GH_TOKEN=xxx pnpm release -- --dry-run         # 只校验并打印要传什么
+ *   GH_TOKEN=xxx pnpm release -- --append          # 往已发布的 Release 补另一个平台的产物（不改发布状态）
  *   GH_TOKEN=xxx pnpm release -- --publish-only    # asset 已传好，只把 draft 改成发布态
+ *
+ * 双平台 = 两次构建 + 两次上传：Windows 机器 `pack:win` + `release`（首次会顺便发布），
+ * mac 机器 `pack:mac` + `release --append`。复用 draft 或已发布 Release 时，只清本平台的旧
+ * asset，另一个平台的产物不会被误删。
  *
  * ⚠️ 重跑是幂等的：发现同名 tag 的 draft 就复用它、先删掉旧 asset 再重传。
  *   上传中断很常见，没有这条就得每次手动去网页删 draft。
@@ -22,12 +27,17 @@ const USER_AGENT = 'light-player-release'
 const argv = process.argv.slice(2)
 const dryRun = argv.includes('--dry-run')
 const publishOnly = argv.includes('--publish-only')
+const append = argv.includes('--append')
 const notesFlag = argv.indexOf('--notes')
 const notesArgFile = notesFlag >= 0 ? path.resolve(argv[notesFlag + 1]) : null
 
 // 一个只看不发、一个只发不看，凑在一起语义矛盾
 if (dryRun && publishOnly) {
     console.error('✗ --dry-run 和 --publish-only 不能同时用')
+    process.exit(1)
+}
+if (append && publishOnly) {
+    console.error('✗ --append 本身就不改发布状态，和 --publish-only 冲突')
     process.exit(1)
 }
 
@@ -84,48 +94,71 @@ function collectNotes() {
 // ---------------------------------------------------------------- 收集产物
 
 /**
+ * 按文件名判定归属平台。同一个 Release 里同时躺着两个平台的产物，
+ * 「删除旧 asset」和「校验清单」都必须按平台过滤，否则补发 mac 时会把 Windows 的删掉。
+ */
+function platformOf(name) {
+    if (/^latest-mac.*\.yml$/i.test(name)) return 'mac'
+    if (/^latest.*\.yml$/i.test(name)) return 'win'
+    if (/\.exe(\.blockmap)?$/i.test(name)) return 'win'
+    if (/\.(dmg|zip)(\.blockmap)?$/i.test(name)) return 'mac'
+    return null
+}
+
+/** 清单里的 path 应该指向哪种文件：win 客户端下 exe，mac 客户端下 zip（dmg 不参与更新） */
+const EXPECT_EXT = { win: '.exe', mac: '.zip' }
+const YML_NAME = { win: 'latest.yml', mac: 'latest-mac.yml' }
+
+/**
  * 只在「要上传」的路径上调用。--publish-only 不碰本地文件：
  * asset 已经在 draft 上了，这时候发布目录删了也不该失败。
  */
 function collectAssets() {
     const outDir = path.join(PROJECT_DIR, 'release', version)
     if (!fs.existsSync(outDir)) {
-        die(`产物目录不存在：${outDir}\n先跑 pnpm pack:win`)
+        die(`产物目录不存在：${outDir}\n先跑 pnpm pack:win 或 pnpm pack:mac`)
     }
 
     const allNames = fs.readdirSync(outDir)
-    // 三件套是配套的：exe 给新装用户，blockmap 给差分下载，latest.yml 是版本清单。
-    // 少任何一件都不该发 —— 缺 latest.yml 客户端不会知道有新版本，缺 blockmap 每次都全量下载。
     const list = allNames
-        .filter((n) => /\.exe$/i.test(n) || /\.blockmap$/i.test(n) || /^latest.*\.yml$/i.test(n))
-        .map((n) => ({ name: n, file: path.join(outDir, n), size: fs.statSync(path.join(outDir, n)).size }))
+        .map((name) => ({ name, platform: platformOf(name) }))
+        .filter((a) => a.platform)
+        .map((a) => ({ ...a, file: path.join(outDir, a.name), size: fs.statSync(path.join(outDir, a.name)).size }))
         .sort((a, b) => a.size - b.size)
 
-    if (list.length === 0) die(`release/${version}/ 里没有 exe / blockmap / latest.yml，先打包`)
+    if (list.length === 0) die(`release/${version}/ 里没有 exe / dmg / zip / blockmap / latest*.yml，先打包`)
 
-    const ymlAsset = list.find((a) => /^latest.*\.yml$/i.test(a.name))
-    if (!ymlAsset) die('缺 latest.yml —— publish 配置没生效，检查 electron-builder.yml 的 publish 段')
-
-    const ymlText = fs.readFileSync(ymlAsset.file, 'utf8')
+    const platforms = [...new Set(list.map((a) => a.platform))]
     const strip = (v) => v?.trim().replace(/^['"]|['"]$/g, '')
 
-    const declaredVersion = strip(ymlText.match(/^version:\s*(.+)$/m)?.[1])
-    if (declaredVersion !== version) {
-        die(
-            `latest.yml 里写着 version: ${declaredVersion}，package.json 是 ${version}。\n` +
-                '产物和源码不匹配 —— 改过版本号后忘了重新打包？',
-        )
+    // 每个平台的三件套是配套的：安装包给新装用户，blockmap 给差分下载，latest*.yml 是版本清单。
+    // 缺任何一件都不该发 —— 缺清单客户端不知道有新版本，缺 blockmap 每次都全量下载。
+    for (const platform of platforms) {
+        const ymlAsset = list.find((a) => a.name === YML_NAME[platform])
+        if (!ymlAsset) {
+            die(`缺 ${YML_NAME[platform]} —— publish 配置没生效，检查 electron-builder.yml 的 publish 段`)
+        }
+
+        const ymlText = fs.readFileSync(ymlAsset.file, 'utf8')
+
+        const declaredVersion = strip(ymlText.match(/^version:\s*(.+)$/m)?.[1])
+        if (declaredVersion !== version) {
+            die(
+                `${YML_NAME[platform]} 里写着 version: ${declaredVersion}，package.json 是 ${version}。\n` +
+                    '产物和源码不匹配 —— 改过版本号后忘了重新打包？',
+            )
+        }
+
+        const declaredPath = strip(ymlText.match(/^path:\s*(.+)$/m)?.[1])
+        if (declaredPath && !allNames.includes(declaredPath)) {
+            die(`${YML_NAME[platform]} 指向 ${declaredPath}，但目录里没有这个文件`)
+        }
+        if (declaredPath && !declaredPath.toLowerCase().endsWith(EXPECT_EXT[platform])) {
+            die(`${YML_NAME[platform]} 的 path 是 ${declaredPath}，不是 ${EXPECT_EXT[platform]} —— 客户端会下到错误的文件`)
+        }
     }
 
-    const declaredPath = strip(ymlText.match(/^path:\s*(.+)$/m)?.[1])
-    if (declaredPath && !allNames.includes(declaredPath)) {
-        die(`latest.yml 指向 ${declaredPath}，但目录里没有这个文件`)
-    }
-    if (declaredPath && !/\.exe$/i.test(declaredPath)) {
-        die(`latest.yml 的 path 是 ${declaredPath}，不是 .exe —— NSIS 客户端会下到错误的文件`)
-    }
-
-    return list
+    return { list, platforms }
 }
 
 // ---------------------------------------------------------------- GitHub API
@@ -268,13 +301,14 @@ async function main() {
         return
     }
 
-    const assets = collectAssets()
+    const { list: assets, platforms } = collectAssets()
     const notes = collectNotes()
     if (!notes) {
         console.warn(`⚠️  CHANGELOG.md 里没找到 v${version} 的段落，release notes 用默认标题`)
     }
 
     console.log(`  产物目录  release/${version}/`)
+    console.log(`  平台      ${platforms.join(' + ')}`)
     for (const a of assets) console.log(`    ${a.name}  ${mb(a.size)}`)
     console.log(`  notes     ${notes ? '来自 CHANGELOG.md / --notes' : '默认标题'}`)
 
@@ -287,12 +321,26 @@ async function main() {
     await assertRepoHasCommits()
 
     let release = await findRelease()
-    if (release && !release.draft) {
-        die(`v${version} 已经正式发布过了。改版本号重新打包，别再覆盖已发布的 release。`)
+    const alreadyPublished = !!release && !release.draft
+    if (alreadyPublished && !append) {
+        die(
+            `v${version} 已经正式发布过了。改版本号重新打包，别再覆盖已发布的 release。\n` +
+                '  只是要补另一个平台的产物？用 pnpm release -- --append',
+        )
     }
     if (release) {
-        console.log(`\n复用已有 draft（id=${release.id}），先清掉旧 asset`)
-        for (const asset of release.assets ?? []) await deleteAsset(asset.id)
+        console.log(
+            `\n复用${alreadyPublished ? '已发布的' : '已有 draft'} release（id=${release.id}），` +
+                `只清 ${platforms.join(' / ')} 的旧 asset`,
+        )
+        for (const asset of release.assets ?? []) {
+            const p = platformOf(asset.name)
+            if (p && platforms.includes(p)) {
+                await deleteAsset(asset.id)
+            } else {
+                console.log(`    保留 ${asset.name}（不属于本批平台）`)
+            }
+        }
     } else {
         release = await createDraft(notes)
         console.log(`\n已创建 draft（id=${release.id}）`)
@@ -302,6 +350,11 @@ async function main() {
         process.stdout.write(`  上传 ${asset.name} (${mb(asset.size)}) ... `)
         await uploadAsset(release.upload_url, asset)
         process.stdout.write('ok\n')
+    }
+
+    if (alreadyPublished) {
+        console.log(`\n✓ 已追加到 https://github.com/${owner}/${repo}/releases/tag/${tag}（发布状态未变）\n`)
+        return
     }
 
     // 最后一步才让它对客户端可见

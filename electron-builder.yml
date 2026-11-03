@@ -17,12 +17,10 @@ beforeBuild: ./build/before-build.mjs
 #   latest.yml 里的 path / url 就是这个文件名，两类 provider 都会把它拼进 URL。
 #   带空格要编码成 %20，而 GitHub 的 releases/download/<tag>/<asset> 对编码后的名字匹配很脆。
 #
-# 末尾 -setup 是给「在 Release 页面挑文件的人」看的：那里同时躺着 latest.yml、.blockmap
-# 和两个 GitHub 自动附加的 Source code 包，只有安装包需要被一眼认出来。
-# ⚠️ 这个后缀只在单一 nsis target 下安全 —— 当年加 msiWrapped 时它让
-#   MsiWrappedTarget.getExeSourcePath 拼出的 exe 名与磁盘不一致，直接报
-#   "NSIS executable not found"。将来再加多 target，记得回来处理命名。
-artifactName: ${productName}-${version}-${arch}-setup.${ext}
+# 末尾 -setup 只在 Windows 上要（见 nsis.artifactName）：Release 页面同时躺着 latest.yml、
+# .blockmap 和两个 GitHub 自动附加的 Source code 包，只有安装包需要被一眼认出来。
+# mac 的 dmg / zip 不带这个后缀。arch 对 mac universal 会展开成 "universal"。
+artifactName: ${productName}-${version}-${arch}.${ext}
 
 # 仅打包 Windows
 win:
@@ -31,6 +29,7 @@ win:
   icon: src/shared/assets/images/logo-icon-square.png
 
 nsis:
+  artifactName: ${productName}-${version}-${arch}-setup.${ext}
   # 辅助安装器：没有这一项就没有任何可交互页面，allowToChangeInstallationDirectory 会被直接拒绝
   oneClick: false
   # 可选安装位置；模板会自动补一层 LightPlayer 子目录
@@ -45,6 +44,23 @@ nsis:
   # 数据删除交给自定义卸载询问，不用内置的静默删除
   deleteAppDataOnUninstall: false
   include: build/installer.nsh
+
+# mac：dmg 给新装用户，zip 给自动更新（Squirrel.Mac 只认 zip，缺了更新链就断）。
+# 图标必须是 .icns / .icon —— 26.x 起 mac.icon 不再接受 png。
+mac:
+  target:
+    - dmg
+    - zip
+  icon: build/icon.icns
+  category: public.app-category.music
+  # 过渡态：没有 Developer ID 证书时的 ad-hoc 签名。
+  # 拿到证书后把这一行删掉即可，签名会自动发现 keychain 里的身份。
+  identity: "-"
+  hardenedRuntime: true
+  # 未公证的包必然过不了 spctl，让 osx-sign 去评估只会让构建失败
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
 
 # 更新源：GitHub Releases。
 publish:
