@@ -273,11 +273,24 @@ export const SearchBox = React.memo(function SearchBox({ concealed = false, onId
         return true
     }, [ghostSuffix, value])
 
+    /**
+     * 执行搜索。
+     *
+     * 除了收起面板，还要作废在途的建议请求并置「本轮不要面板」：
+     * 中文输入法里「空格上屏 + 回车搜索」是两次极近的按键，上屏那次已经把去抖后的
+     * 建议请求发出去了。`setOpen(false)` 只关掉当下的面板，稍后到达的响应仍会
+     * `setOpen(true)` 把它重新弹出来 —— 页面已经跳到搜索结果，面板却盖在上面
+     * （Windows 的输入法上屏更慢，更容易撞上这个窗口）。
+     * `reqRef` 递增会让旧响应的 `seq` 对不上而丢弃；`setUserActive(false)` 则顺带
+     * 让取数 effect 提前退出（连残留在途的去抖定时器一起清掉）。
+     */
     const runSearch = useCallback(
         (text: string) => {
             const q = text.trim()
             if (!q) return
+            reqRef.current++
             setOpen(false)
+            setUserActive(false)
             navigateTo(`/search?q=${encodeURIComponent(q)}`)
             // 执行搜索后让输入框失焦
             inputRef.current?.blur()
@@ -293,7 +306,10 @@ export const SearchBox = React.memo(function SearchBox({ concealed = false, onId
      */
     const selectSuggestion = useCallback(
         (s: SearchSuggestion) => {
+            // 同 runSearch：作废在途请求，否则响应回来会把刚收起的面板重新弹出来
+            reqRef.current++
             setOpen(false)
+            setUserActive(false)
             setValue(s.source === 'local' ? '' : s.text)
             inputRef.current?.blur()
             navigateTo(s.path)
@@ -349,6 +365,8 @@ export const SearchBox = React.memo(function SearchBox({ concealed = false, onId
             }
             case 'Escape': {
                 e.preventDefault()
+                // 收起时同样作废在途请求：否则刚 Esc 掉的面板会在响应到达时自己弹回来
+                reqRef.current++
                 setOpen(false)
                 // 明确表示「不要面板」：本轮聚焦里不再自动弹，只能靠再点一下 / 再输一个字叫回来
                 setUserActive(false)
