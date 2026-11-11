@@ -2,10 +2,10 @@ import { getAllSongs } from '@renderer/lib/db'
 import { deleteFile, listDir } from '@renderer/lib/file'
 import { isOk } from '@shared/result'
 import { normalizePath } from '@shared/utils'
+import { fromFileUrl } from '@renderer/lib/utils'
 import { rlog } from '@renderer/lib/log'
 import type { FileInfo } from '@shared/types/file'
 import { materializeSongCover, songPicDir } from './coverPipeline'
-import { updateSong } from './songWrite'
 
 /** 重建并发度 */
 const REBUILD_CONCURRENCY = 5
@@ -14,15 +14,13 @@ const REBUILD_CONCURRENCY = 5
  * 重建单首歌曲的封面缓存：物化落盘后写回 `pic`。
  * 返回重建后的路径（空串表示没重建出来）。
  *
- * 落盘复用 `materializeSongCover`（与创建路径同一条物化逻辑），这里只把结果写回歌曲行。
+ * 落盘与写回都复用 `materializeSongCover`（与创建路径同一条物化逻辑）。
  */
 export async function rebuildSongPic(song: LP.Song): Promise<string> {
     const r = await materializeSongCover(song)
-    // 临时失败：保留原路径不写库 —— 下次清扫还会把它判成悬空、再试一次
+    // 临时失败：保留原地址不写库 —— 下次清扫还会把它判成悬空、再试一次
     if (!isOk(r)) return ''
-    const path = r.value ?? ''
-    await updateSong(song.id, path ? { pic: { url: song.pic?.url ?? '', path } } : { pic: undefined })
-    return path
+    return r.value ?? ''
 }
 
 /** 清扫结果：删掉的文件数，以及「记录里有、盘上没了」需要重建的歌 */
@@ -64,7 +62,7 @@ export async function sweepSongPics(): Promise<SongPicSweepResult> {
 
     const used = new Set<string>()
     for (const s of songsR.value) {
-        const p = normalizePath(s.pic?.path)
+        const p = normalizePath(fromFileUrl(s.pic) ?? undefined)
         if (p) used.add(p)
     }
 
@@ -72,11 +70,11 @@ export async function sweepSongPics(): Promise<SongPicSweepResult> {
     const doomed = new Set<string>()
     for (const [key, f] of onDisk) if (!used.has(key) || f.size === 0) doomed.add(key)
 
-    // 只判「路径落在本目录里」的歌：`pic.path` 指向别处（改过缓存目录、历史遗留）时
-    // 文件其实还在原处能正常显示，误判成悬空会让整个资料库重新下载一轮。
+    // 只判「路径落在本目录里」的歌：`pic` 指向别处（改过缓存目录、历史遗留）时
+    // 文件其实还在原处能正常显示，误判成悬空会让整个资料库重新抽一轮。
     const dirPrefix = `${normalizePath(dir)}/`
     for (const s of songsR.value) {
-        const key = normalizePath(s.pic?.path)
+        const key = normalizePath(fromFileUrl(s.pic) ?? undefined)
         if (!key || !key.startsWith(dirPrefix)) continue
         if (!onDisk.has(key) || doomed.has(key)) out.dangling.push(s)
     }

@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS songs
     `album_pinyin`       TEXT,                                           -- 专辑名称拼音
     `singer`             TEXT NOT NULL,                                  -- 歌手（必填）
     `singer_pinyin`      TEXT,                                           -- 歌手拼音
-    `pic`                TEXT,                                           -- 歌曲封面图片（JSON格式）
+    `pic`                TEXT,                                           -- 歌曲封面地址
     `duration`           INTEGER DEFAULT 0,                              -- 歌曲时长（秒）
     `is_liked`           INTEGER DEFAULT 0,                              -- 是否喜欢（默认否）
     `download_qualities` TEXT,                                           -- 本地音质数组（JSON格式）

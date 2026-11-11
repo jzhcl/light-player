@@ -1,5 +1,6 @@
 import { isOk } from '@shared/result'
 import { readFile } from '@renderer/lib/file'
+import { fromFileUrl } from '@renderer/lib/utils'
 import { eventBus, LP_EVENT } from '@renderer/lib/eventBus'
 import { player } from '@renderer/features/player/player'
 import { usePlayerStore } from '@renderer/store'
@@ -61,19 +62,17 @@ async function localPicToDataUrl(path: string): Promise<string | undefined> {
  * 优先使用在线地址；本地路径则读取文件转成 data URL；无法解析时省略 artwork
  */
 async function resolveArtwork(song: LP.Song): Promise<MediaImage[] | undefined> {
-    const url = song.pic?.url || ''
-    const path = song.pic?.path || ''
+    const pic = song.pic ?? ''
+    if (!pic) return undefined
 
-    if (url && ALLOWED_ARTWORK_SCHEMES.test(url)) {
-        return [{ src: url, sizes: '512x512' }]
+    if (ALLOWED_ARTWORK_SCHEMES.test(pic)) {
+        return [{ src: pic, sizes: '512x512' }]
     }
-    if (path) {
-        const dataUrl = await localPicToDataUrl(path)
-        if (dataUrl) {
-            return [{ src: dataUrl, sizes: '512x512' }]
-        }
-    }
-    return undefined
+    // 本地歌抽出来的内嵌图是 file://，系统面板不认这个协议 → 转成 data URL 再给
+    const path = fromFileUrl(pic)
+    if (!path) return undefined
+    const dataUrl = await localPicToDataUrl(path)
+    return dataUrl ? [{ src: dataUrl, sizes: '512x512' }] : undefined
 }
 
 /** 封面缓存：重推 metadata 时不能每次都去读盘 */

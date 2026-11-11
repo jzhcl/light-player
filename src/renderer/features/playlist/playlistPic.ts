@@ -3,6 +3,7 @@ import { downloadImage, imageExtFromUrl } from '@renderer/lib/download'
 import { getAllPlaylists } from '@renderer/lib/db'
 import { useSettingsStore } from '@renderer/store'
 import { generateId, join, normalizePath } from '@shared/utils'
+import { fromFileUrl } from '@renderer/lib/utils'
 import { isOk } from '@shared/result'
 
 
@@ -33,11 +34,16 @@ function extOf(path: string): string {
 }
 
 /**
- * 首个「有封面」歌曲的封面 —— 刻意跳过没图的歌，而不是取 `songs[0]`
+ * 首个「有封面」歌曲的封面，转成歌单封面要的形状 —— 刻意跳过没图的歌，而不是取 `songs[0]`。
+ *
+ * 歌曲的 `pic` 可能是在线地址（走下载），也可能是本地抽出的 `file://`（走复制），
+ * 这里统一收敛成 `{ url, path }` 再交给 `ensurePlaylistPic`。
  */
-export function firstSongPic(list: LP.Song[]): LP.Song['pic'] | undefined {
+export function firstSongPic(list: LP.Song[]): LP.Playlist['pic'] | undefined {
     for (const s of list) {
-        if (s.pic?.url || s.pic?.path) return s.pic
+        if (!s.pic) continue
+        const local = fromFileUrl(s.pic)
+        return local ? { url: '', path: local } : { url: s.pic, path: '' }
     }
     return undefined
 }

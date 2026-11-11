@@ -60,15 +60,16 @@ export function buildLocalSongFields(fields: {
 }
 
 /**
- * 入库时的封面状态：只记在线地址，不下载。
+ * 入库时的封面地址。
  *
- * `path: ''` 就是「待物化」的标记 —— 三态说明见 `coverPipeline.ts` 顶部。
+ * 插件歌存 CDN 地址，本地歌没有地址 → `undefined`，
+ * 交给封面管道从文件里抽图（状态说明见 `coverPipeline.ts` 顶部）。
  */
 export function pendingPic(picUrl?: string): LP.Song['pic'] {
-    return picUrl ? { url: picUrl, path: '' } : undefined
+    return picUrl || undefined
 }
 
-/** 是否需要重新物化封面：URL 变了，或上次没落成（`path` 为空） */
+/** 是否需要更新封面地址：新地址非空且与库里不同。本地歌不带地址，不会被这条覆盖掉已抽出的图 */
 export function shouldRefreshPic(picUrl: string | undefined, current?: LP.Song['pic']): boolean {
-    return !!picUrl && (picUrl !== current?.url || !current?.path)
+    return !!picUrl && picUrl !== current
 }

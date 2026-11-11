@@ -42,6 +42,29 @@ export function toPlayableUrl(url: string): string {
     return toFileUrl(url)
 }
 
+/** 是否是本地文件的 file:// 地址 */
+export function isFileUrl(url?: string): boolean {
+    return !!url && /^file:\/\//i.test(url)
+}
+
+/**
+ * file:// URL → 本地绝对路径。不是 file:// 或不合法时返回 null。
+ * 与 `toFileUrl` 互逆（编码/斜杠差异都在这里吃掉）。
+ */
+export function fromFileUrl(url?: string): string | null {
+    if (!isFileUrl(url)) return null
+    const rest = (url as string).slice('file://'.length)
+    let path: string
+    try {
+        path = decodeURI(rest)
+    } catch {
+        return null
+    }
+    // file:///C:/a.jpg → /C:/a.jpg：Windows 盘符前那一根斜杠要去掉
+    if (/^\/[a-zA-Z]:/.test(path)) path = path.slice(1)
+    return path || null
+}
+
 export async function validateLink(link: string, timeoutMs = 8000): Promise<boolean> {
     if (!link) return false
     if (!isNetworkUrl(link)) return await isFileExists(link)

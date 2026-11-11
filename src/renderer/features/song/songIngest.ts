@@ -160,8 +160,9 @@ export async function createSongFromLocalFile(filePath: string): Promise<Result<
     const fields = deriveLocalSongFields(fileName, meta)
 
     // 4. 封面：这次解析只告诉该歌曲「有几张内嵌图」，图片字节不出主进程。
-    //    有图 → 标成待物化，由封面管道稍后抽取落盘
-    const pic: LP.Song['pic'] = meta.common.pictureCount ? { url: '', path: '' } : undefined
+    //    有图 → 留空（`undefined` = 还没试过），由封面管道抽取落盘；
+    //    没图 → `''` 明确「没有封面」，管道不再重试
+    const pic: LP.Song['pic'] = meta.common.pictureCount ? undefined : ''
 
     // 5. 音质与大小
     const qualityType = formatQuality({

@@ -18,11 +18,8 @@ declare namespace LP {
         /** 歌手名称 */
         singer: string
         singerPinyin?: string
-        /** 歌曲封面（JSON）：在线地址或本地路径 */
-        pic?: {
-            url?: string
-            path?: string
-        }
+        /** 歌曲封面 */
+        pic?: string
         /** 歌曲时长（秒） */
         duration: number
         /** 是否喜欢 */

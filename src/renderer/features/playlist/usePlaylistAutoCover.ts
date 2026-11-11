@@ -39,7 +39,7 @@ export function usePlaylistAutoCover(playlistId: string): PlaylistAutoCover {
     const busyRef = useRef(false)
 
     const sync = useCallback(
-        (candidate: LP.Song['pic'] | undefined) => {
+        (candidate: LP.Playlist['pic'] | undefined) => {
             if (busyRef.current) return
             if (!candidate?.url && !candidate?.path) return
             // 设置走 getState 而不用订阅：否则本回调身份随设置变化 → 页面的 load 跟着重建 → 白白重跑取数
