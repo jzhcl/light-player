@@ -62,6 +62,34 @@ interface LocalSongFile {
 const fileKey = (f: LocalSongFile): string => `${songKey(f.song.pluginId, f.song.pluginSongId)}:${f.quality.type}`
 
 /**
+ * 某个本地文件被删后，把它从其它歌曲的下载记录里摘掉。
+ *
+ * 同一份文件可能既被下载、又被手动添加为本地歌（本页按路径去重后显示的是本地身份）。
+ * 只删本地那份的话，插件身份那行的 `download_qualities` 还指着同一路径，本页会把它当
+ * 「已下载」再列一次 —— 用户看到的是「删了还在」。这里只摘下载记录，插件歌本身留在曲库。
+ *
+ * @returns 被摘掉记录的歌曲数
+ */
+async function detachDownloadedPath(songs: readonly LP.Song[], path: string): Promise<number> {
+    const norm = normalizePath(path)
+    if (!norm) return 0
+
+    let n = 0
+    for (const s of songs) {
+        if (s.pluginId === 'local') continue
+        const cur = s.downloadQualities ?? []
+        const matched = cur.filter((q) => normalizePath(q.path) === norm)
+        if (matched.length === 0) continue
+
+        const next = cur.filter((q) => normalizePath(q.path) !== norm)
+        if (!isOk(await updateSong(s.id, { downloadQualities: next }))) continue
+        for (const q of matched) await deleteDownloadRecordBySongAndQuality(s.id, q.type)
+        n++
+    }
+    return n
+}
+
+/**
  * 本地与下载页（路由 `/local-download`），三个 Tab：
  *  - 本地歌曲：原本在本地 + LightPlayer 下载到本地的文件（超集）；删除=从 songs 表移除 + 可选删文件。
  *  - 下载歌曲：由 LightPlayer 下载到本地的文件（按音质展开）；删除=清该音质 + 删下载记录 + 可选删文件。
@@ -343,12 +371,16 @@ export function LocalDownloadPage() {
 
         let count = 0
         let fileCount = 0
+        let detached = 0
         for (const g of bySong.values()) {
             const song = g.song
             if (song.pluginId === 'local') {
                 if (deleteFileToo) {
                     await deleteFile(song.pluginSongId)
                     fileCount++
+                    // 同一份文件可能还被插件身份记在 download_qualities 里；
+                    // 不摘掉的话，删完它又会以「已下载」的身份出现在本页
+                    detached += await detachDownloadedPath(songsRef.current, song.pluginSongId)
                 }
                 if (await deleteSong(song.id)) count++
             } else {
@@ -362,8 +394,12 @@ export function LocalDownloadPage() {
                 }
                 if (deleteFileToo) {
                     for (const p of g.paths) {
-                        await deleteFile(p)
+                        const del = await deleteFile(p)
+                        if (!isOk(del)) continue
                         fileCount++
+                        // 同一路径可能还有一条「本地歌」身份的行：文件没了，但那是另一条库记录，
+                        // 不替用户删 —— 只标缺失（行灰化，点播放时才问是否从资料库移除）
+                        markFileMissing(p)
                     }
                 }
                 // 歌词文件由这首歌的所有音质共用：只有「这首再没有别的下载」时才跟着删
@@ -391,6 +427,7 @@ export function LocalDownloadPage() {
         rlog.info(
             `[local] 删除 ${count} 首` +
                 (deleteFileToo ? `，同时删除本地文件 ${fileCount} 个` : '') +
+                (detached > 0 ? `，并解除 ${detached} 首插件歌对这些文件的下载记录` : '') +
                 `\nsongIds: ${idList([...bySong.keys()])}`,
         )
         const total = bySong.size
@@ -613,7 +650,7 @@ export function LocalDownloadPage() {
                     }}
                 >
                     <Icon name="music-note-list" size={16} />
-                    <span>本地歌曲 {songs.length}</span>
+                    <span>本地歌曲 {localFiles.length}</span>
                 </a>
                 <a
                     className={`ld-tabs__item ${tab === 'downloaded' ? 'ld-tabs__item--active' : ''}`}
@@ -624,7 +661,7 @@ export function LocalDownloadPage() {
                     }}
                 >
                     <Icon name="download" size={16} />
-                    <span>下载歌曲 {downloadedSongs.length}</span>
+                    <span>下载歌曲 {downloadedFiles.length}</span>
                 </a>
                 <a
                     className={`ld-tabs__item ${tab === 'records' ? 'ld-tabs__item--active' : ''}`}
