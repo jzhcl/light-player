@@ -12,7 +12,7 @@ import { importFeedback } from '@renderer/features/song/songActions'
  * 列表不用手动插：`addSongToPlaylist` 会 emit `PLAYLIST.SONG_ADDED`，页面的订阅负责回流。
  *
  * 单文件与多文件的路径是分开的两段而不是「多文件循环的特例」，因为提示语义不同：
- * 单文件要能说清「哪个格式不支持 / 哪一步失败」，多文件只给一条汇总。
+ * 单文件要能说清「哪个格式不支持 / 哪一步失败」，多文件只给一条汇总（明细进日志）。
  */
 
 /** 拖入导入允许的音频后缀 */
@@ -60,45 +60,71 @@ export function usePlaylistImport({
             /* ── 单文件：逐步骤给具体原因 ── */
             if (files.length === 1) {
                 const path = window.api.getFilePath(files[0])
-                const { ext } = extOf(path)
+                const { name, ext } = extOf(path)
                 if (!AUDIO_EXTENSIONS.includes(ext)) {
+                    message.error(`不支持的文件格式：${name}`)
+                    rlog.warn(`[playlist] 拖入被拒（格式 .${ext || '无后缀'} 不支持）：${path}`)
                     return
                 }
+
                 let song: LP.Song
                 try {
                     const r = await createSongFromLocalFile(path)
                     if (!isOk(r)) {
+                        message.error(`导入失败：${r.error}`)
+                        rlog.warn(`[playlist] 导入失败 ${name}：${r.error}\npath: ${path}`)
                         return
                     }
                     song = r.value
                 } catch (err) {
+                    const reason = (err as Error).message
+                    message.error(`导入失败：${reason}`)
+                    rlog.warn(`[playlist] 导入异常 ${name}：${reason}\npath: ${path}`)
                     return
                 }
+
                 if (listRef.current.some((s) => s.id === song.id)) {
+                    message.info(`《${song.name}》已在歌单中`)
+                    rlog.info(`[playlist] 跳过重复：${name}\nplaylistId: ${playlistId}`)
                     return
                 }
+
                 const linked = await addSongToPlaylist(playlistId, song.id)
                 if (!isOk(linked)) {
+                    message.error(`加入歌单失败：${linked.error}`)
+                    rlog.warn(
+                        `[playlist] 加入歌单失败 ${name}：${linked.error}\nplaylistId: ${playlistId}`,
+                    )
                     return
                 }
+
+                rlog.info(`[playlist] 导入到歌单：成功 1\nplaylistId: ${playlistId}\npath: ${path}`)
                 return
             }
 
             /* ── 多文件：一条汇总 ── */
-            const paths = files
-                .map((f) => window.api.getFilePath(f))
-                .filter((p) => AUDIO_EXTENSIONS.includes(extOf(p).ext))
-            if (paths.length === 0) return
+            const picked = files.map((f) => window.api.getFilePath(f))
+            const paths = picked.filter((p) => AUDIO_EXTENSIONS.includes(extOf(p).ext))
+            const skipped = picked.length - paths.length
+            if (paths.length === 0) {
+                message.error('没有可导入的音频文件')
+                rlog.warn(`[playlist] 拖入的文件都不支持：\n${idList(picked)}`)
+                return
+            }
 
             const known = new Set(listRef.current.map((s) => s.id))
+            /** 失败明细（文件名 + 原因）：汇总提示里放不下，只进日志 */
+            const reasons: string[] = []
             let added = 0
             let dup = 0
             let failed = 0
             for (const path of paths) {
+                const { name } = extOf(path)
                 try {
                     const r = await createSongFromLocalFile(path)
                     if (!isOk(r)) {
                         failed++
+                        reasons.push(`${name}: ${r.error}`)
                         continue
                     }
                     const song = r.value
@@ -109,28 +135,33 @@ export function usePlaylistImport({
                     const linked = await addSongToPlaylist(playlistId, song.id)
                     if (!isOk(linked)) {
                         failed++
+                        reasons.push(`${name}: ${linked.error}`)
                         continue
                     }
                     known.add(song.id)
                     added++
-                } catch {
+                } catch (err) {
                     // 单个文件解析 / 落盘异常不应中断整批导入
                     failed++
+                    reasons.push(`${name}: ${(err as Error).message}`)
                 }
             }
 
             // 以 DB 的 position 序列为准收口：批量「逐个插到最前」在 DB 里是逆序，
             // 静默按 DB 重排一次，避免本地回流顺序与 DB 漂移（否则切走再切回会变序）。
             if (added > 0) await silentReload()
-            rlog.info(
+
+            rlog[failed > 0 ? 'warn' : 'info'](
                 `[playlist] 导入到歌单 ${paths.length} 个：成功 ${added}，重复 ${dup}，失败 ${failed}` +
+                    (skipped > 0 ? `，格式不支持跳过 ${skipped}` : '') +
+                    (reasons.length > 0
+                        ? `\n失败原因: ${reasons.slice(0, 10).join(' | ')}` +
+                          (reasons.length > 10 ? ` …共 ${reasons.length} 条` : '')
+                        : '') +
                     `\nplaylistId: ${playlistId}\npaths: ${idList(paths)}`,
             )
             const fb = importFeedback(added, dup, failed)
             message[fb.type](fb.text)
-
-
-
         },
         [playlistId, listRef, silentReload],
     )
