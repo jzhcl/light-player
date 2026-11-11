@@ -1,5 +1,5 @@
 import { createSongLyric, getSongLyricBySongId, updateSongLyric } from '@renderer/lib/db'
-import { parseAudioMetadata } from '@renderer/lib/audio'
+import { parseAudioMetadata, type AudioLyricTag } from '@renderer/lib/audio'
 import { executePluginCommand } from '@renderer/features/plugin/pluginService'
 import { ok, isOk } from '@shared/result'
 import { formatDate } from '@shared/format'
@@ -65,18 +65,41 @@ function normalizeKrcLines(input: LP.KrcLine[] | undefined): LP.KrcLine[] {
     }))
 }
 
+/** 毫秒 → `mm:ss.xx` */
+function formatLrcTime(ms: number): string {
+    const cs = Math.max(0, Math.round(ms / 10))
+    const m = Math.floor(cs / 6000)
+    const s = Math.floor((cs % 6000) / 100)
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs % 100).padStart(2, '0')}`
+}
+
+/**
+ * 内嵌歌词标签 → 库侧 `lyric`（LRC 文本）。
+ *
+ *  - mp3 的 USLT 原样保留时间轴，直接取 `text`；
+ *  - FLAC / OGG 的 `LYRICS` 是纯字符串，music-metadata 会当成 LRC 解析，
+ *    时间轴进 `syncText`、`text` 只剩去掉时间轴的纯文本
+ *    （见 music-metadata `lib/lrc/LyricsParser.js`）。
+ *    这时必须由 `syncText` 重建，否则时间轴就丢了 —— 而 `lyric` 字段的契约就是 LRC。
+ */
+function lyricFromTag(tag: AudioLyricTag): string | null {
+    if (tag.syncText?.length) {
+        return tag.syncText.map(({ timestamp, text }) => `[${formatLrcTime(timestamp)}]${text}`).join('\n')
+    }
+    return tag.text?.trim() ? tag.text : null
+}
+
 /**
  * 本地歌曲：从音频文件的内嵌标签取歌词。
- *
- * 只取「有 text 且没有同步歌词行」的标签——syncText 是结构化行，宿主没有可直接
- * 使用的 LRC 文本。解析失败不阻断：本地文件没内嵌歌词是常态，不是错误。
+ * 解析失败不阻断：本地文件没内嵌歌词是常态，不是错误。
  */
 async function fetchLocalLyric(song: LP.Song): Promise<Partial<LP.SongLyric> | null> {
     const metaR = await parseAudioMetadata(song.pluginSongId)
     if (!isOk(metaR)) return null
 
     for (const tag of metaR.value.common.lyrics ?? []) {
-        if (tag.text && !tag.syncText?.length) return { lyric: tag.text }
+        const lyric = lyricFromTag(tag)
+        if (lyric) return { lyric }
     }
     return null
 }

@@ -3,13 +3,13 @@ import { toFileUrl } from './utils'
 
 
 /** music-metadata 的内嵌歌词标签（common.lyrics 的条目） */
-interface AudioLyricTag {
+export interface AudioLyricTag {
     language?: string
     description?: string
-    /** 纯文本歌词（未同步） */
+    /** 歌词正文。文本本身是 LRC 时，时间轴会被解析进 `syncText` 并从 text 里剥掉 */
     text?: string
-    /** 已解析的同步歌词行；有值时 text 通常为空 */
-    syncText?: unknown[]
+    /** 已解析出的同步歌词行（LRC 文本被解析后才有） */
+    syncText?: { timestamp: number; text: string }[]
 }
 
 interface AudioMetadata {
@@ -48,6 +48,29 @@ export async function extractCoverTo(
     baseName: string,
 ): Promise<Result<string | null>> {
     return invokeResult<string | null>('audio:extractCover', filePath, destDir, baseName)
+}
+
+/** 写标签的入参：封面给在线地址，歌词给 LRC 文本（都可省略） */
+export interface EmbedTagsInput {
+    filePath: string
+    coverUrl?: string
+    lyric?: string
+}
+
+/** 实际写进去了什么；两项都 false = 文件里已有、或没提供，未落盘 */
+export interface EmbedTagsResult {
+    cover: boolean
+    lyric: boolean
+}
+
+/**
+ * 把封面与 LRC 写进音频文件（主进程用 taglib-wasm 实现）。
+ *
+ * 文件里已有封面 / 歌词时跳过该项，两样都不缺则完全不落盘。
+ * 不支持的格式、文件被占用等会返回错误，调用方自行决定是否重试。
+ */
+export async function embedTags(input: EmbedTagsInput): Promise<Result<EmbedTagsResult>> {
+    return invokeResult<EmbedTagsResult>('audio:embedTags', input)
 }
 
 /**

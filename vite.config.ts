@@ -1,10 +1,10 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import svgr from 'vite-plugin-svgr'
 import electron from 'vite-plugin-electron'
 import { fileURLToPath, URL } from 'node:url'
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { copyFileSync, existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 const ROOT = dirname(fileURLToPath(import.meta.url))
@@ -81,6 +81,30 @@ const buildDefines = {
     __APP_REPO_NAME__: JSON.stringify(repo.repo),
 }
 
+/**
+ * taglib-wasm 的 wasm 运行时不能被 rollup 内联：
+ * 主进程通过 `new URL('./taglib-wasi.wasm', import.meta.url)` 在 bundle 同级找它
+ * （见 src/main/ipc/audio.ts），所以每次构建后拷一份到产物目录。
+ * 打包时 `electron-builder.yml` 只带 `dist/**\/*`，这一步也是它进安装包的唯一途径。
+ */
+function copyTaglibWasm(): Plugin {
+    const from = join(ROOT, 'node_modules/taglib-wasm/dist/taglib-wasi.wasm')
+    return {
+        name: 'lp-copy-taglib-wasm',
+        writeBundle(options) {
+            const dir = options.dir
+            if (!dir) return
+            if (!existsSync(from)) {
+                console.warn(`[build] 找不到 ${from}，主进程写标签会失败`)
+                return
+            }
+            const to = join(dir, 'taglib-wasi.wasm')
+            copyFileSync(from, to)
+            console.log(`[build] copied taglib-wasi.wasm → ${to}`)
+        },
+    }
+}
+
 export default defineConfig({
     resolve: {
         alias,
@@ -95,6 +119,7 @@ export default defineConfig({
                 vite: {
                     resolve: { alias },
                     define: buildDefines,
+                    plugins: [copyTaglibWasm()],
                     build: {
                         outDir: 'dist/main',
                         rollupOptions: {
