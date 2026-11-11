@@ -1,6 +1,7 @@
 import { ContextMenu } from '@renderer/components/ContextMenu'
 import { player } from '@renderer/features/player/player'
 import { type QueueEntry } from '@renderer/features/song/songKey'
+import { formatSize } from '@shared/format'
 
 /**
  * 歌曲右键菜单中菜单项的共用实现
@@ -45,20 +46,36 @@ export function AddToSubMenu({ playlists, includeLiked, onPickLiked, onPickPlayl
     )
 }
 
-/** 音质标签：形如「无损(SQ) - 12.3MB」（无 size 时省略后半段） */
+/**
+ * 音质大小 → 可显示的字符串。空串表示「没有可用大小」，调用方据此省掉后半段。
+ *
+ * 三个来源形态不一：插件给的是字节数（`number`，偶尔是数字字符串），
+ * 库里存的是 `buildSongPatch` 格式化过的 `"12.3 MB"`，历史数据还可能是 `"0.00 B"`（大小未知）。
+ * `formatSize` 只吃数字，数字字符串和 `"0.00 B"` 都得在这里先归一再交给它。
+ */
+function formatQualitySize(size?: string | number): string {
+    if (size === undefined || size === '') return ''
+    const bytes = typeof size === 'number' ? size : Number(size)
+    if (Number.isFinite(bytes)) return bytes > 0 ? formatSize(bytes) : ''
+    const text = String(size).trim()
+    return /^0(\.0+)?\s*B$/i.test(text) ? '' : text
+}
+
+/** 音质标签：形如「无损(SQ) - 12.3 MB」（大小未知时省略后半段） */
 function formatQualityLabel(quality: { type: Quality; size?: string | number }): string {
-    const size = quality.size === undefined || quality.size === '' ? '' : ` - ${quality.size}`
+    const size = formatQualitySize(quality.size)
+    const suffix = size ? ` - ${size}` : ''
     switch (quality.type) {
         case 'Standard':
-            return `标准${size}`
+            return `标准${suffix}`
         case 'HQ':
-            return `高品(HQ)${size}`
+            return `高品(HQ)${suffix}`
         case 'SQ':
-            return `无损(SQ)${size}`
+            return `无损(SQ)${suffix}`
         case 'Hi-Res':
-            return `高解析(Hi-Res)${size}`
+            return `高解析(Hi-Res)${suffix}`
         case 'Master':
-            return `臻品母带(Master)${size}`
+            return `臻品母带(Master)${suffix}`
     }
 }
 
