@@ -67,6 +67,15 @@ declare namespace LP {
         'download.preferHigherQuality': boolean
 
         /**
+         * 下载时是否把这首歌的完整歌词数据（原文 / 翻译 / 罗马音 / 逐字）另存一份到
+         * `<userData>/download_lyric/`。
+         *
+         * 文件是 LightPlayer 私有格式，文件名与音频文件同名、去掉音质后缀，
+         * 所以同一首歌的多个音质共用一份。
+         */
+        'download.saveLyricFile': boolean
+
+        /**
          * 下载文件名格式。同一选项既用于生成下载文件名，也用于解析本地文件名。
          *
          * 四种格式的专辑段都可省略：没有专辑信息时生成侧退化成 `歌手 - 歌名`

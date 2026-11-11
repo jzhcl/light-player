@@ -27,7 +27,7 @@ import {
 } from '@renderer/lib/db/downloadRecord'
 import { getSongById } from '@renderer/lib/db/song'
 import { updateSong } from '@renderer/features/song/songWrite'
-import { enqueueEmbedTags } from './embedTags'
+import { enqueuePostDownload } from './postDownload'
 
 // 对外保留按 id 查记录的入口
 export { getDownloadRecordById }
@@ -185,8 +185,8 @@ function subscribeDownloadEvents(): () => void {
                 await updateSong(songId, { downloadQualities: next })
                 // 重新下载完成 → 清掉「本地文件缺失」标记（自愈缺失状态）
                 clearFileMissing(filePath)
-                // 补内嵌封面与歌词
-                enqueueEmbedTags(task)
+                // 收尾：落歌词文件（可选）+ 内嵌封面与歌词
+                enqueuePostDownload(task)
                 void recomputeActiveCount()
             })()
         }),

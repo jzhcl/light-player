@@ -14,8 +14,8 @@ import { useSettingsStore } from '@renderer/store'
 /** 音质简写（HQ→H、SQ→S、Hi-Res→R、Master→M） */
 export type QualityAbbr = 'H' | 'S' | 'R' | 'M'
 
-/** 音质后缀形态：`_H` / `_S` / `_R` / `_M`。解析时从整串尾部尝试剥离。 */
-const QUALITY_SUFFIX_RE = /_[HSRM]$/
+/** 音质后缀形态：`_H` / `_S` / `_R` / `_M`。解析时从整串尾部尝试剥离，下载歌词文件名也用它剥离。 */
+export const QUALITY_SUFFIX_RE = /_[HSRM]$/
 
 /** 反向解析结果：能拆出哪段算哪段（缺的为空串）。 */
 interface ParsedFileName {

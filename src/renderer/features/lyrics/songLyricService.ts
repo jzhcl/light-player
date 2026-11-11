@@ -1,5 +1,6 @@
 import { createSongLyric, getSongLyricBySongId, updateSongLyric } from '@renderer/lib/db'
 import { parseAudioMetadata, type AudioLyricTag } from '@renderer/lib/audio'
+import { readLyricFile } from '@renderer/lib/lyricFile'
 import { executePluginCommand } from '@renderer/features/plugin/pluginService'
 import { ok, isOk } from '@shared/result'
 import { formatDate } from '@shared/format'
@@ -124,6 +125,28 @@ async function fetchPluginLyric(song: LP.Song): Promise<Result<Partial<LP.SongLy
 }
 
 /**
+ * 下载时落下的歌词文件（`<userData>/download_lyric/`，与音频文件同名）。
+ *
+ * 本地歌的 `pluginSongId` 就是文件路径；插件歌取任意一个已下载音质的路径 ——
+ * 正常情况下插件会给歌词，这里只是「碰运气」的兜底（插件被禁用/删掉时才有意义）。
+ */
+async function fetchStoredLyric(song: LP.Song): Promise<Partial<LP.SongLyric> | null> {
+    const audioPath =
+        song.pluginId === 'local' ? song.pluginSongId : song.downloadQualities?.[0]?.path
+    if (!audioPath) return null
+
+    const r = await readLyricFile(audioPath)
+    if (!isOk(r) || !r.value) return null
+
+    return {
+        lyric: r.value.lyric,
+        tlyric: r.value.tlyric ?? '',
+        klyric: r.value.klyric ?? [],
+        rlyric: r.value.rlyric ?? '',
+    }
+}
+
+/**
  * 读取歌曲歌词；缺失时按来源补拉并写回数据库。
  *
  * 只在「库里没有主歌词」时才发起拉取，避免每次播放都打插件接口。
@@ -135,9 +158,17 @@ export async function getSongLyric(song: LP.Song): Promise<Result<LP.SongLyric>>
 
     let fetched: Result<Partial<LP.SongLyric> | null>
     if (song.pluginId === 'local') {
-        fetched = ok(await fetchLocalLyric(song))
+        // 先看下载时落下的完整歌词（含逐字 / 翻译 / 罗马音），没有再退回音频文件内嵌的 LRC
+        fetched = ok((await fetchStoredLyric(song)) ?? (await fetchLocalLyric(song)))
     } else {
-        fetched = await fetchPluginLyric(song)
+        const r = await fetchPluginLyric(song)
+        if (isOk(r) && r.value) {
+            fetched = r
+        } else {
+            // 插件没给（或插件已不可用）→ 翻一下下载时留下的歌词文件；都没有就保留插件的结果
+            const stored = await fetchStoredLyric(song)
+            fetched = stored ? ok(stored) : r
+        }
     }
     if (!isOk(fetched)) return fetched
     if (!fetched.value) return base

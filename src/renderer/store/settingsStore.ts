@@ -151,6 +151,7 @@ export function getDefaultRendererSettings(): LP.RendererSetting {
         'player.preferredQuality': 'Standard',
         'player.autoSkipOnError': true,
         'download.preferHigherQuality': false,
+        'download.saveLyricFile': false,
         'download.fileNameFormat': 'singer_album-name',
         // 本地文件检查的扫描间隔（节流窗口）—— 详见 LP.RendererSetting 里该键的注释
         'localFile.checkInterval': '6h',

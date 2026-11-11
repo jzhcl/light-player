@@ -17,6 +17,7 @@ import { player } from '@renderer/features/player/player'
 import { createSongFromLocalFile } from '@renderer/features/song/songIngest'
 import { deleteSong } from '@renderer/features/song/songLifecycle'
 import { updateSong } from '@renderer/features/song/songWrite'
+import { removeLyricFile } from '@renderer/lib/lyricFile'
 import {
     ActionsColumn,
     AlbumColumn,
@@ -364,6 +365,11 @@ export function LocalDownloadPage() {
                         await deleteFile(p)
                         fileCount++
                     }
+                }
+                // 歌词文件由这首歌的所有音质共用：只有「这首再没有别的下载」时才跟着删
+                if (deleteFileToo && cur.length === 0) {
+                    const [one] = g.paths
+                    if (one) await removeLyricFile(one)
                 }
                 count++
             }

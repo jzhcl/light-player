@@ -81,6 +81,7 @@ export function LocalDownloadSetting() {
     const downloadDir = useSettingsStore((s) => s.settings['path.downloadDir'])
     const cacheDir = useSettingsStore((s) => s.settings['path.cacheDir'])
     const preferHigher = useSettingsStore((s) => s.settings['download.preferHigherQuality'])
+    const saveLyricFile = useSettingsStore((s) => s.settings['download.saveLyricFile'])
     const fileNameFormat = useSettingsStore((s) => s.settings['download.fileNameFormat'])
     const checkInterval = useSettingsStore((s) => s.settings['localFile.checkInterval'])
     const setSetting = useSettingsStore((s) => s.setSetting)
@@ -242,6 +243,28 @@ export function LocalDownloadSetting() {
                                     setSetting('download.preferHigherQuality', v)
                                     rlog.info(
                                         `[setting] 下载优先高音质 ${preferHigher ? '开' : '关'} → ${v ? '开' : '关'}`,
+                                    )
+                                }}
+                            />
+                        </div>
+                    </label>
+
+                    {/* 整行可点 */}
+                    <label className="settings-item settings-item--toggle">
+                        <div className="settings-item-label">
+                            <span className="settings-item-name">同时保存歌词文件</span>
+                            <span className="settings-item-hint">
+                                下载时把完整歌词数据（原文 / 翻译 / 罗马音 / 逐字）另存到应用目录，
+                                与音频文件同名（去掉音质后缀）
+                            </span>
+                        </div>
+                        <div className="settings-item-action">
+                            <Checkbox
+                                checked={saveLyricFile}
+                                onChange={(v) => {
+                                    setSetting('download.saveLyricFile', v)
+                                    rlog.info(
+                                        `[setting] 下载保存歌词文件 ${saveLyricFile ? '开' : '关'} → ${v ? '开' : '关'}`,
                                     )
                                 }}
                             />
