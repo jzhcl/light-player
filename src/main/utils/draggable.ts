@@ -199,6 +199,9 @@ export function makeWindowFullyDraggable(win: BrowserWindow): DragController {
                 origin = null
                 return
             }
+            // win32 没有 macOS 那种「渲染端通知起止」，按下就是这一轮拖拽的起点 ——
+            // mode 不置成 drag 的话 track() 不会走 moveTo
+            mode = 'drag'
             recordOrigin(screen.getCursorScreenPoint())
         })
 
@@ -216,6 +219,10 @@ export function makeWindowFullyDraggable(win: BrowserWindow): DragController {
                 origin = null
                 return
             }
+
+            // 兜底：透明无边框窗上实测收不到 WM_LBUTTONDOWN，
+            // 只靠按下那一刻置 mode 会整条链路失效。左键按着还在移动，就是拖拽进行中。
+            if (mode === 'idle') mode = 'drag'
 
             track(screen.getCursorScreenPoint())
         })
