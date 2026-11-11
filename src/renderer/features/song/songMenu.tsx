@@ -114,10 +114,10 @@ export function DownloadItem({ disabled, qualityOptions, onSelect }: DownloadIte
 }
 
 /**
- * 「播放」项
+ * 「播放」项：插到当前曲之后并立刻起播
  */
 export interface PlayItemProps {
-    /** 待播放的队列项（整批作为新队列） */
+    /** 待播放的队列项，按列表顺序（多选时取整个选区） */
     entries: QueueEntry[]
 }
 export function PlayItem({ entries }: PlayItemProps) {
@@ -126,8 +126,7 @@ export function PlayItem({ entries }: PlayItemProps) {
             icon="play"
             onSelect={() => {
                 if (entries.length === 0) return
-                player.setQueue(entries)
-                void player.play()
+                void player.playAfterCurrent(entries)
             }}
         >
             播放

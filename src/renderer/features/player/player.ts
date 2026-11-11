@@ -19,7 +19,7 @@ import {
     noteSongStarted,
     noteUserAction,
 } from '@renderer/features/player/autoSkip'
-import { dedupeEntries, planAdd, planRemove, planReorder } from '@renderer/features/player/queueModel'
+import { dedupeEntries, planAdd, planPlayAfter, planRemove, planReorder } from '@renderer/features/player/queueModel'
 import { eventBus, LP_EVENT } from '@renderer/lib/eventBus'
 import { songDeleted } from '@renderer/lib/batchedEvents'
 import { shuffle } from '@renderer/lib/utils'
@@ -507,6 +507,34 @@ function addToNext(s: QueueEntry): void {
 }
 
 /**
+ * 把一批歌插到当前曲之后，并立刻从这批的第一首起播。
+ *
+ * 与 `addToQueue` 只差两处：是否立刻切过去，以及「选区含当前曲」时的排序
+ * （选区 [A,B,C] 而 B 正在播 → 播 A、B、C，详见 `planPlayAfter`）。
+ *
+ * 随机模式不影响这批的顺序：它是用户显式点选的目标，原样入队；洗牌只作用于
+ * 本来就在队列里的后半段（`setMode` / `setQueue` 时已完成）。
+ */
+async function playAfterCurrent(ss: QueueEntry[]): Promise<void> {
+    if (!ss.length) return
+    noteUserAction()
+
+    const { queue, currentIndex } = readQueueState()
+    const planned = planPlayAfter(queue, currentIndex, ss)
+    if (!planned) return
+
+    if (planned.replay) {
+        // 选中的就是正在播的那首 → 从头重播，不重取链（队列没有变化）
+        seekTo(0)
+        await play()
+        return
+    }
+
+    writeQueue(planned.plan.queue, planned.plan.currentIndex)
+    await advanceTo(planned.startIndex)
+}
+
+/**
  * 重排队列（拖拽落定）。入参是新的全量 key 顺序。
  * 当前曲按 key 跟随 —— 重排只改它落在第几位，不改「正在播放的是哪一首」。
  */
@@ -591,6 +619,7 @@ export const player = {
     setQueue,
     addToQueue,
     addToNext,
+    playAfterCurrent,
     reorderQueue,
     removeFromQueue,
     clearQueue,

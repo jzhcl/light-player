@@ -69,6 +69,76 @@ export function planAdd(
     }
 }
 
+/** 「插到当前曲之后并立刻起播」的规划结果 */
+export interface PlayAfterPlan {
+    /** 新队列与新当前索引；`replay` 时为原样返回 */
+    plan: QueuePlan
+    /** 立刻起播的下标（选区第一项） */
+    startIndex: number
+    /** 选区只有「正在播放的那首」：原地从头上重播，队列不变 */
+    replay: boolean
+}
+
+/**
+ * 把选区按给定顺序插到当前曲之后，并从选区第一项起播。
+ *
+ * 与 `planAdd(..., 'current')` 的差别全在「选区里含正在播放的那首」时怎么排：
+ *  - 选区 = [B]（B 正在播）→ 原地重播，队列不动（`planAdd` 会返回 null，点了没反应）；
+ *  - 选区 = [A, B, C]（B 正在播）→ 把 B 从原槽位挪进选区中它自己的位置，队列成为
+ *    A、B、C（B 仍在播，指针不动），随后从 A 起播。
+ *
+ * 入队顺序即选区顺序，不参与随机模式的洗牌：这批是用户显式点选的目标。
+ *
+ * @returns null = 选区为空，静默放弃
+ */
+export function planPlayAfter(
+    queue: QueueEntry[],
+    currentIndex: number,
+    incoming: QueueEntry[],
+): PlayAfterPlan | null {
+    const items = dedupeEntries(incoming)
+    if (!items.length) return null
+
+    // 没有当前曲（空队列 / 指针越界）：整批插到队首、从第一项起播
+    if (currentIndex < 0 || currentIndex >= queue.length) {
+        const plan = planAdd(queue, currentIndex, items, 'begin')
+        return plan ? { plan, startIndex: 0, replay: false } : null
+    }
+
+    const current = queue[currentIndex]
+    const currentKey = queueEntryKey(current)
+    const pos = items.findIndex((entry) => queueEntryKey(entry) === currentKey)
+
+    if (pos === 0 && items.length === 1) {
+        return { plan: { queue, currentIndex }, startIndex: currentIndex, replay: true }
+    }
+
+    // 同 key 项先剔除；`slot` 是当前槽位剔除后的落点。
+    // 当前项只有「选区里也点了它」时才摘下来挪位，否则原地不动。
+    const incomingKeys = new Set(items.map((entry) => queueEntryKey(entry)))
+    let removedBefore = 0
+    const filtered = queue.filter((item, i) => {
+        if (i === currentIndex) return pos < 0
+        if (!incomingKeys.has(queueEntryKey(item))) return true
+        if (i < currentIndex) removedBefore++
+        return false
+    })
+    const slot = currentIndex - removedBefore
+    // 选区里的当前项换成队列里的那个实例，其余按选区顺序排列
+    const block = items.map((entry) => (queueEntryKey(entry) === currentKey ? current : entry))
+    // 选区含当前曲 → 用选区块占住当前槽位；不含 → 插在当前曲之后
+    const insertAt = pos < 0 ? slot + 1 : slot
+
+    return {
+        plan: {
+            queue: [...filtered.slice(0, insertAt), ...block, ...filtered.slice(insertAt)],
+            currentIndex: slot,
+        },
+        startIndex: insertAt,
+        replay: false,
+    }
+}
+
 /**
  * 重排队列的规划。
  *

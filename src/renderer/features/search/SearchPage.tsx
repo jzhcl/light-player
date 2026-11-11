@@ -11,6 +11,7 @@ import { useNavigateTo } from '@renderer/hooks/useNavigateTo'
 import { useSongListPlayback } from '@renderer/hooks/useSongList'
 import { useStableRows } from '@renderer/hooks/useStableRows'
 import { usePluginStore, usePlaylistStore } from '@renderer/store'
+import { player } from '@renderer/features/player/player'
 import { songKey, type QueueEntry } from '@renderer/features/song/songKey'
 import { AddToSubMenu, AddToQueueItem, DownloadItem, PlayItem } from '@renderer/features/song/songMenu'
 import { downloadSongs } from '@renderer/features/download/downloadService'
@@ -360,8 +361,15 @@ export function SearchPage() {
     const { playAll, playFromRow } = useSongListPlayback({ listRef: songsRef, toEntry: asQueueEntry })
 
     // 本页的行是 SearchRow（外层包着插件歌曲），与队列元素 `LP.Plugin.Song` 不是同一类型，
-    // 故 `activateRow` 用不了 —— 自己包一层
-    const handleActivate = useCallback((_row: SearchRow, index: number) => playFromRow(index), [playFromRow])
+    // 故 `activateRow` 用不了 —— 自己包一层。
+    // 搜索结果是「命中集」而非用户编排好的序列：双击只播这一首（插到当前曲之后），
+    // 想整份列表播有工具栏的「播放全部」。
+    const handleActivate = useCallback(
+        (row: SearchRow) => {
+            void player.playAfterCurrent([asQueueEntry(row.song)])
+        },
+        [],
+    )
 
     // 切换喜欢：未入库先落库（ensureSong），再写 isLiked + 我喜欢歌单
     const toggleLike = useCallback(async (row: SearchRow) => {
