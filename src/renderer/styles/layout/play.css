@@ -128,25 +128,45 @@ img.play-bg-img {
     pointer-events: none;
 }
 
-/* 内环混色层：铺满整盘（哪一段可见由主题侧遮罩决定）；必须在 .play-disc 里，跟着盘转 */
+/* 内环混色层：铺满整盘；必须在 .play-disc 里，跟着盘转。
+   环形遮罩写在容器上——closest-side = 盘半径，stop 百分比即盘半径百分比
+   （圆窗缘在 52% 盘半径：inset 24% 是直径坐标，换算半径要 ×2），子图怎么
+   transform 都影响不到遮罩几何（原先遮罩写在图上，stop 还要随 scale 换算，
+   真实落点谁也算不清）。曲线：55%（黑环外缘）从 0 起、63% 到峰值、一路缓降到
+   90% 收零——「环、过渡」，不是贴着封面的一圈色线：黑环外必须有颜色撑着，
+   否则会读成一条分隔线。 */
 .play-disc-tint {
     position: absolute;
     inset: 0;
     border-radius: 50%;
     pointer-events: none;
+    -webkit-mask-image: radial-gradient(circle closest-side at 50% 50%,
+        transparent 0 55%,
+        #000 63%,
+        rgba(0, 0, 0, 0.45) 78%,
+        rgba(0, 0, 0, 0) 90%);
+    mask-image: radial-gradient(circle closest-side at 50% 50%,
+        transparent 0 55%,
+        #000 63%,
+        rgba(0, 0, 0, 0.45) 78%,
+        rgba(0, 0, 0, 0) 90%);
 }
 
-/* ⚠️ 图片盒必须与封面圆窗同框，cover 取景才与圆窗逐像素一致（scale 放大后是「封面长出去」的延续）。
-   ⚠️ 不能只写 inset: 24% —— <img> 是替换元素，width:auto 时用的是图片固有尺寸，必须显式写 52%。 */
+/* 采样图铺满整盘再放大旋转取景：环上的色晕不再与封面同向（同向读起来像糊掉的复印件）。
+   <img> 是替换元素，width/height 必须显式写 100%，auto 用的是图片固有尺寸。 */
 .play-disc-tint-img {
     position: absolute;
-    top: 24%;
-    left: 24%;
-    width: 52%;
-    height: 52%;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    /* 从圆窗长到 ≥ 遮罩终点：66% 盘半径收掉，2.6 × 圆窗半径(26%) = 67.6% */
-    transform: scale(2.6);
+    /* 1.35 ≈ 旧版采样尺度（2.6 × 圆窗 52%），出环即色块、不至于碎 */
+    transform: scale(1.35) rotate(75deg);
+}
+
+/* 第二层反向旋转 + 略大取样：两层不同角度叠出的色调没有单一方向性 */
+.play-disc-tint-img--alt {
+    transform: scale(1.5) rotate(-105deg);
 }
 
 /* 中心圆窗：盘径 52%（四边内缩 24%） */
@@ -196,28 +216,31 @@ img.play-disc-cover-img {
     box-shadow: 0 0 0 7px #0b0b0b, inset 0 0 18px rgba(0, 0, 0, 0.35);
 }
 
-/* 封面色调只延续一小段（52%→66%，出圆窗不到一圈）；closest-side 下 100% = 盘半径 */
+/* 混色采样图的溶解强度（环形可见范围由容器遮罩决定） */
 .play-disc-tint-img {
-    -webkit-mask-image: radial-gradient(circle closest-side at 50% 50%,
-        #000 0 56%, rgba(0, 0, 0, 0.35) 62%, rgba(0, 0, 0, 0) 66%);
-    mask-image: radial-gradient(circle closest-side at 50% 50%,
-        #000 0 56%, rgba(0, 0, 0, 0.35) 62%, rgba(0, 0, 0, 0) 66%);
-    /* 绝对像素且不随盘径缩放：改盘尺寸必须同步改（5px ≈ 盘径 4%） */
-    filter: blur(5px) brightness(0.9);
-    opacity: 0.5;
+    /* 12px 经 scale ≈1.35 放大后 ≈16px 生效：图形溶成色晕但颜色不发灰。
+       绝对像素且不随盘径缩放，改盘尺寸需同步调。
+       两层各 0.42、近窗缘叠合 ≈0.66——读得出「颜色从封面长出来」，又压得住不发闷 */
+    filter: blur(12px) brightness(0.9);
+    opacity: 0.42;
 }
 
-/* 盘面高光：一道 140deg 的宽带（右上 → 左下，约 40° 角），screen 只提亮不遮盖。
-   刻意不随盘转（光源固定）；峰值 0.20 是出图定的（0.30 太抢、0.14 看不见）。 */
+/* 盘面高光：黑胶沟槽是同心圆，逐点镜面反射聚成顺着沟槽弯曲的弧形光斑（光源两侧各一片），
+   linear-gradient 直带的边缘是直线、一眼塑料。改用圆心放在盘外的径向渐变——等亮度线是圆弧，
+   与沟槽同向弯。光源取左上：右上主光斑（0.14，旧直带 0.20 偏亮）、左下副光斑减半
+   （完全对称会显得机械）、左上再加一层很弱的环境光把「两片光斑」连成「被照亮的盘」。
+   刻意不随盘转（光源固定）；alpha 经栅格化对比旧版调定。 */
 .play-disc-sheen {
-    background-image: linear-gradient(
-        140deg,
-        rgba(255, 255, 255, 0) 34%,
-        rgba(255, 255, 255, 0.05) 44%,
-        rgba(255, 255, 255, 0.20) 50%,
-        rgba(255, 255, 255, 0.05) 56%,
-        rgba(255, 255, 255, 0) 66%
-    );
+    background-image:
+        radial-gradient(circle 120cqmin at -10cqmin -10cqmin,
+            rgba(255, 255, 255, 0.055) 30%,
+            rgba(255, 255, 255, 0) 75%),
+        radial-gradient(circle 105cqmin at 118cqmin -18cqmin,
+            rgba(255, 255, 255, 0.14) 45%,
+            rgba(255, 255, 255, 0) 82%),
+        radial-gradient(circle 105cqmin at -18cqmin 118cqmin,
+            rgba(255, 255, 255, 0.07) 45%,
+            rgba(255, 255, 255, 0) 82%);
     mix-blend-mode: screen;
 }
 
@@ -239,6 +262,82 @@ img.play-disc-cover-img {
 
 @media (prefers-reduced-motion: reduce) {
     .play-disc {
+        animation: none;
+    }
+}
+
+/* ================================================================
+   打开动画：浮层每次挂载即重放。
+   节奏：浮层淡入铺底 → 背景轻缩放 → 唱盘带回弹旋入 → 文案/进度/控制
+   依次上浮 → 歌词最后淡入。backwards 填充让延迟期间先保持隐藏。
+   ================================================================ */
+
+@keyframes play-overlay-fade {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes play-bg-in {
+    from {
+        opacity: 0;
+        transform: scale(1.05);
+    }
+}
+
+/* 唱盘入场放在 wrap 上：盘自身的旋转动画占着 .play-disc 的 transform，
+   两层动画叠加会互相顶掉，拆到父子两层互不干扰 */
+@keyframes play-disc-in {
+    from {
+        opacity: 0;
+        transform: scale(0.72) rotate(-28deg);
+    }
+}
+
+@keyframes play-rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+}
+
+.play-overlay {
+    animation: play-overlay-fade 0.22s ease-out;
+}
+
+.play-bg {
+    animation: play-bg-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.04s backwards;
+}
+
+/* 回弹入场的过冲交给 bezier 超调（y > 1） */
+.play-disc-wrap {
+    animation: play-disc-in 0.6s cubic-bezier(0.34, 1.4, 0.64, 1) 0.06s backwards;
+}
+
+.play-meta {
+    animation: play-rise-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.14s backwards;
+}
+
+.play-timeline {
+    animation: play-rise-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.2s backwards;
+}
+
+.play-controls {
+    animation: play-rise-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.26s backwards;
+}
+
+.play-lyric-col {
+    animation: play-rise-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.3s backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .play-overlay,
+    .play-bg,
+    .play-disc-wrap,
+    .play-meta,
+    .play-timeline,
+    .play-controls,
+    .play-lyric-col {
         animation: none;
     }
 }
