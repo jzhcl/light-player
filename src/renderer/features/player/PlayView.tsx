@@ -61,9 +61,11 @@ export function PlayView() {
                     {/* 唱盘 */}
                     <div className="play-disc-wrap">
                         <div className="play-disc">
-                            {/* 内环混色：封面圆窗外那一圈铺同一张图（重度模糊 + 径向遮罩），环的颜色由封面决定。 */}
+                            {/* 内环混色：圆窗外那一圈铺两层不同角度旋转的封面采样（重度模糊 + 径向遮罩），
+                                环的色调仍由封面决定，但读不出与封面同向的图样。 */}
                             <div className="play-disc-tint">
                                 <Cover pic={currentSong?.pic} className="play-disc-tint-img"/>
+                                <Cover pic={currentSong?.pic} className="play-disc-tint-img play-disc-tint-img--alt"/>
                             </div>
 
                             <div className="play-disc-cover">
