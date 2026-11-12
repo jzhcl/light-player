@@ -214,12 +214,20 @@ async function findRelease() {
     }
 }
 
-async function createDraft(notes) {
+/**
+ * 建 draft 时显式指定 tag 的落点。
+ *
+ * 不传 `target_commitish` 时 GitHub 会拿默认分支当时的 HEAD 建 tag —— 本地提交没推，
+ * tag 就打在旧提交上。注意：这个字段只在 tag 尚不存在时生效，
+ * tag 已存在时 GitHub 直接挂上去，所以还要靠 `assertReleaseHead` 拦住「没推送」。
+ */
+async function createDraft(notes, targetCommitish) {
     return api(`/repos/${owner}/${repo}/releases`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             tag_name: tag,
+            target_commitish: targetCommitish,
             name: `LightPlayer ${tag}`,
             body: notes ?? `LightPlayer ${tag}`,
             draft: true,
@@ -264,6 +272,40 @@ async function publishRelease(releaseId) {
 }
 
 // ---------------------------------------------------------------- 主流程
+
+/**
+ * 建新 draft 前确认「本地发布提交已经推到远程默认分支」。
+ *
+ * 只在会新建 tag 的路径上拦：复用已有 release / --append 不会重新建 tag，
+ * --publish-only 只改发布状态，--dry-run 不触网，都不该被这个检查挡住。
+ *
+ * @returns 本地 HEAD 的完整 sha（已确认等于远程 origin/HEAD），供 createDraft 作 target_commitish
+ */
+function assertReleaseHead() {
+    let local = ''
+    let remote = ''
+    try {
+        local = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: PROJECT_DIR, encoding: 'utf8' }).trim()
+        remote = execFileSync('git', ['ls-remote', 'origin', 'HEAD'], {
+            cwd: PROJECT_DIR,
+            encoding: 'utf8',
+        }).trim().split(/\s+/)[0] || ''
+    } catch (err) {
+        die(`无法确认远程分支状态（git ls-remote origin HEAD 失败）：${err.message}`)
+    }
+    if (!/^[0-9a-f]{40}$/i.test(remote)) {
+        die(`远程 origin/HEAD 没读到有效提交号：${remote || '(空)'}`)
+    }
+    if (local !== remote) {
+        die(
+            '本地发布提交还没推送到远程默认分支，先 git push 再发版。\n' +
+                `  本地 HEAD        ${local}\n` +
+                `  远程 origin/HEAD ${remote}\n` +
+                `  否则 GitHub 会用远程那个旧提交创建 ${tag} 的 tag（v0.1.4 首发打错 tag 就是这么来的）。`,
+        )
+    }
+    return local
+}
 
 function warnGitState() {
     try {
@@ -342,8 +384,9 @@ async function main() {
             }
         }
     } else {
-        release = await createDraft(notes)
-        console.log(`\n已创建 draft（id=${release.id}）`)
+        const targetCommitish = assertReleaseHead()
+        release = await createDraft(notes, targetCommitish)
+        console.log(`\n已创建 draft（id=${release.id}），tag 落点 ${targetCommitish.slice(0, 7)}`)
     }
 
     for (const asset of assets) {
